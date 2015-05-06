@@ -1,0 +1,32 @@
+.debug_bitrix p {
+    margin: 0;
+    text-indent: 15px;
+}
+.debug_bitrix .green {
+    background-color: #B7F2C6;
+}
+
+.debug_bitrix .red {
+    color: red;
+}
+
+.debug_bitrix .blue-true {
+    color: #4081F5;
+}
+
+.debug_bitrix .blue {
+    color: #1F4F8D;;
+}
+
+.debug_bitrix .gray {
+    color: gray;
+}
+
+
+.debug_bitrix.filtration p {
+    display: none;
+}
+
+.debug_bitrix.filtration .ok {
+    display: block;
+}
