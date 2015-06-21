@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>complete without Enter</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/> <!-- todo change to charset="utf-8"-->
+    <style>
+        a {
+            display: block;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="normalize.css">
+    <link rel="stylesheet" href="main.css"/>
+    <script src="helper.js"></script>
+</head>
+<body>
+<header>
+    <form onsubmit="return false;">
+        <input type="text" name="omnibox" id="omnibox"/>
+        <select name="omniExample" id="omniExample">
+            <option value="">nothing</option>
+            <option value=".web">.web</option>
+            <option value="a[class=web]">a[class=web]</option>
+            <option value=".web,.tool">.web,.tool</option>
+            <option value=".web.tool">.web.tool</option>
+            <option value=".web.tool:not(.without)">.web.tool:not(.without)</option>
+        </select>
+        <ul id="matchList" style="display: none;"> match tag list</ul>
+    </form>
+</header>
+
+<aside id="tagTree">
+    <ul id="tree"></ul>
+</aside>
+
+<section>
+    <!--
+    <div id="demo">
+        <a class="reminder task"> reminder task </a>
+        <a class="web"> web </a>
+        <a class="web tool"> web tool</a>
+        <a class="tool"> tool </a>
+        <a class="web tool without"> web tool without </a>
+        <a class="some"> some</a>
+        <a class="web webgl"> web webgl </a>
+        <a class="js online"> js online </a>
+        <a class="tool-online"> tool-online </a>
+    </div>
+    -->
+
+    <div id="links">
+        loading...
+    </div>
+</section>
+
+<script src="autoComplete.js"></script>
+<script src="https://script.google.com/macros/s/AKfycby8lKRqZDd4oJo1GgsIav_gPaj0iJ_jl5E84IeE333a/dev?prefix=loadSheet"></script>
+<script src="tree.js"></script>
+
+<article id="todo">
+    <section>
+        <p>todo chose links group (job, ...); show Metro (hover - show in group a)</p>
+
+        <p>расширять дерево при наведении или при скролле, когда открытая ветка занимает всю высоту (где писал?
+            вроде в юзабилити)</p>
+
+        <p>сделать простую страничку с единственным скриптом - применением стиля - для слабых пк и больших закладок.
+            Ну и инпут для ввода имени таблици, для простого структурного разделения, робота-просто почитать</p>
+
+        <p>tool-online: not show ".tool"</p>
+        <p>?</p>
+    </section>
+</article>
+
+</body>
+</html>

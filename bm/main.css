@@ -1,0 +1,128 @@
+/*
+tags - накладываются друг на друга
+box-shadow: 0 -2px 2px #999 inset;*/
+
+body {
+    background-color: #F7F7F7;
+}
+
+body > header {
+    width: 100%;
+    position: fixed;
+    background-color: #F7F7F7;
+    height: 55px;
+    -webkit-box-shadow: 0 1px 5px #ccc;
+    -moz-box-shadow: 0 1px 5px #ccc;
+    box-shadow: 0 1px 5px #ccc;
+}
+
+body > aside {
+    width: 200px;
+}
+
+#tagTree, body > section {
+    padding-top: 55px;
+}
+
+body > section {
+    margin-left: 200px;
+    box-shadow: -1px -3px 5px #e4e4e4;
+}
+
+#todo {
+    width: 50%;
+    height: 80%;
+    position: fixed;
+    top: 30px;
+    right: -50%;
+    transition: right .2s;
+    padding-left: 20px;
+}
+
+#todo:hover {
+    right: 0;
+}
+
+#todo section {
+    background-color: #D0D0D0;
+    border: 1px dashed darkgray;
+    height: 100%;
+    padding: 0 10px;
+    overflow: auto;
+}
+
+.fold > ul {
+    display: none;
+}
+
+.fold:before {
+    content: '+';
+    position: absolute;
+    margin-left: -7px;
+}
+
+#tagTree {
+    float: left;
+}
+
+#tagTree .active > ul {
+    box-shadow: inset 6px 0px 5px #CCC;
+}
+
+#tagTree ul {
+    list-style-type: none;
+    padding-left: 12px;
+    font-family: monospace;
+    border-left: 1px dotted lightgray;
+}
+
+#tree { /* todo rename */
+    float: left;
+}
+
+#demo, #links {
+    background-color: #fff;
+}
+
+#omnibox {
+    width: 98%;
+    box-shadow: inset 0 0 5px #777;
+    border: 0 solid transparent;
+    margin: 5px auto;
+    display: block;
+}
+
+#matchList {
+    float: right;
+    z-index: 100;
+    background-color: #FFFFFF;
+    list-style-type: none;
+    padding: 3px;
+    margin: 0 5px;
+    border: 1px solid lightgrey;
+    box-shadow: 1px 1px 5px #ccc;
+}
+
+#matchList > .active {
+    background-color: #777;
+    color: #fff;
+}
+
+a {
+    /*background: linear-gradient(#F1F1F1, #DADADA);*/
+    /*margin: 1px;*/
+    padding-left: 22px;
+    border-bottom: 1px dotted #ddd;
+    /*display: block;*/
+    text-decoration: none;
+    color: black;
+    background-size: 19px auto;
+}
+a:hover {
+    /*box-shadow: -1px 0 2px #00488A;*/
+    color: #4670B2;
+}
+
+.hot {
+    background-color: #FDFFE5;
+}
