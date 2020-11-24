@@ -1,5 +1,60 @@
+<style>
+	body {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	}
+	a > p {
+		color: white;
+		background-color: rgba(0,0,0,0.3);
+		margin: 5px;
+		position: absolute;
+	}
+	a > img {
+		width: 100%;
+	}
+</style>
+<input id="key" type='text' />
+<button id="show">show</button>
 <script>
-	addEventListener('message', e => console.log(e.data));
-	//todo save url, src, title
+	const key = 'tempItems';
+	const $ = selector => document.querySelector(selector);
+	const create = name => document.createElement(name);
+	$('#key').placeholder = key;
+	$('#show').onclick = () => {
+		for (const i of load($('#key').value || key)) {
+			const a=create('a'), p=create('p'), img=create('img');
+			a.href = i.url;
+			img.src = i.src;
+			p.textContent = i.title;
+			a.append(p, img);
+			document.body.appendChild(a);
+		}
+	};
+	
+	const log = t => {
+		const p = document.createElement('p');
+		p.textContent = t;
+		document.body.appendChild(p);
+	};
+	
+	opener.postMessage('ready', '*');
+	addEventListener('message', e => {
+		log('message');
+		const k = e.data?.key || key;
+		let items = load(k);
+		const { url, src, title } = e.data;
+		items.push({ url, src, title });
+		localStorage.setItem(k, JSON.stringify(items));
+		log(`saved ${title}`);
+	});
+
+	function load(key) {
+		let items = [];
+		try {
+			items = JSON.parse(localStorage.getItem(key));
+		} catch(e) {
+			log(`parsing error ${e}`);
+		}
+		return items;
+	}
 </script>
-<button>show</button>
