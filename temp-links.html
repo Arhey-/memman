@@ -51,7 +51,7 @@
 	function load(key) {
 		let items = [];
 		try {
-			items = JSON.parse(localStorage.getItem(key));
+			items = JSON.parse(localStorage.getItem(key)) || [];
 		} catch(e) {
 			log(`parsing error ${e}`);
 		}
