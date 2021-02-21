@@ -1,7 +1,13 @@
 <style>
+	:root {
+		--repeat: auto-fit;
+	}
 	body {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
+	}
+	a {
+		position: relative;
 	}
 	a > p {
 		color: white;
@@ -13,23 +19,33 @@
 		width: 100%;
 	}
 </style>
+<input id="perRow" type='number' placeholder='auto-fit' />
 <input id="key" type='text' />
 <button id="show">show</button>
 <script>
+	//todo storage event
 	const key = 'tempItems';
 	const $ = selector => document.querySelector(selector);
 	const create = name => document.createElement(name);
+	const addCard = i => {
+		const a=create('a'), p=create('p'), img=create('img');
+		a.href = i.url;
+		img.src = i.src;
+		p.textContent = i.title;
+		a.append(p, img);
+		document.body.appendChild(a);
+	};
+	
 	$('#key').placeholder = key;
 	$('#show').onclick = () => {
 		for (const i of load($('#key').value || key)) {
-			const a=create('a'), p=create('p'), img=create('img');
-			a.href = i.url;
-			img.src = i.src;
-			p.textContent = i.title;
-			a.append(p, img);
-			document.body.appendChild(a);
+			addCard(i);
 		}
 	};
+	$('#perRow').onchange = () => document.documentElement.style.setProperty(
+		'--repeat',
+		$('#perRow').value || 'auto-fit'
+	);
 	
 	const log = t => {
 		const p = document.createElement('p');
@@ -43,9 +59,12 @@
 		const k = e.data?.key || key;
 		let items = load(k);
 		const { url, src, title } = e.data;
+		//todo already exist
 		items.push({ url, src, title });
-		localStorage.setItem(k, JSON.stringify(items));
-		log(`saved ${title}`);
+		const s = JSON.stringify(items);
+		localStorage.setItem(k, s);
+		log(`saved (${s.length}) ${title}`);
+		addCard(e.data);
 	});
 
 	function load(key) {
