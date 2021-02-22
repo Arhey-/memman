@@ -55,8 +55,8 @@
 	let moveToEnd;
 	$('#end').onclick = () => moveToEnd = true;
 	document.body.addEventListener('click', e=> {
+		if (!moveToEnd ||  'A' != e.target.parentElement.tagName) return;
 		cosnt a = e.target.parentElement;
-		if (!moveToEnd ||  'A' != a.tagName) return;
 		e.preventDefault();
 		moveToEnd = false;
 		const k = $('#key').value || key;
