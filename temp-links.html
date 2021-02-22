@@ -75,6 +75,7 @@
 		p.textContent = t;
 		document.body.appendChild(p);
 	};
+	addEventListener('error', log);
 
 	function save(key, o) {
 		const s = JSON.stringify(o);
