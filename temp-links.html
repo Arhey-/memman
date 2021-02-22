@@ -1,25 +1,26 @@
 <head>
-<style>
-	:root {
-		--repeat: auto-fit;
-	}
-	body {
-		display: grid;
-		grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
-	}
-	a {
-		position: relative;
-	}
-	a > p {
-		color: white;
-		background-color: rgba(0,0,0,0.3);
-		margin: 5px;
-		position: absolute;
-	}
-	a > img {
-		width: 100%;
-	}
-</style>
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<style>
+		:root {
+			--repeat: auto-fit;
+		}
+		body {
+			display: grid;
+			grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
+		}
+		a {
+			position: relative;
+		}
+		a > p {
+			color: white;
+			background-color: rgba(0,0,0,0.3);
+			margin: 5px;
+			position: absolute;
+		}
+		a > img {
+			width: 100%;
+		}
+	</style>
 </head>
 
 <input id="perRow" type='number' placeholder='auto-fit' />
