@@ -54,17 +54,19 @@
 	let moveToEnd;
 	$('#end').onclick = () => moveToEnd = true;
 	document.body.addEventListener('click', e=> {
-		if (!moveToEnd ||  'A' != e.target.parentElement.tagName) return;
+		cosnt a = e.target.parentElement;
+		if (!moveToEnd ||  'A' != a.tagName) return;
 		e.preventDefault();
 		moveToEnd = false;
 		const k = $('#key').value || key;
 		const items = load(k);
 		if (!items.length) return;
-		const url = e.target.parentElement.href;
+		const url = a.href;
 		const i = items.findIndex(i => i.url == url);
-		const [item] = items.splice(i);
+		const [item] = items.splice(i, 1);
 		items.push(item);
 		save(k, items);
+		a.parentElement.append(a);
 	});
 	
 	const log = t => {
