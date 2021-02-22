@@ -20,13 +20,19 @@
 		a > img {
 			width: 100%;
 		}
+		#tool {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		}
 	</style>
 </head>
 
-<button id="end">end</button>
-<input id="perRow" type='number' placeholder='auto-fit' />
-<input id="key" type='text' />
-<button id="show">show</button>
+<div id="tool">
+	<button id="end">end</button>
+	<input id="perRow" type='number' placeholder='auto-fit' />
+	<input id="key" type='text' />
+	<button id="show">show</button>
+</div>
 <script>
 	//todo storage event
 	const key = 'tempItems';
