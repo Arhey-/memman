@@ -54,14 +54,14 @@
 	
 	let moveToEnd;
 	$('#end').onclick = () => moveToEnd = true;
-	document.body.addEventListener('click', e=> {
-		if (!moveToEnd ||  'A' != e.target.parentElement.tagName) return;
-		cosnt a = e.target.parentElement;
+	document.body.addEventListener('click', e => {
+		if (!moveToEnd || 'A' != e.target.parentElement.tagName) return;
 		e.preventDefault();
 		moveToEnd = false;
 		const k = $('#key').value || key;
 		const items = load(k);
 		if (!items.length) return;
+		const a = e.target.parentElement;
 		const url = a.href;
 		const i = items.findIndex(i => i.url == url);
 		const [item] = items.splice(i, 1);
