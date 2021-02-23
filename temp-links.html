@@ -10,7 +10,7 @@
 		}
 		#cards {
 			display: grid;
-			grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 		}
 		a {
 			position: relative;
@@ -20,6 +20,7 @@
 			background-color: rgba(0,0,0,0.3);
 			margin: 5px;
 			position: absolute;
+			font-size: calc(1rem / var(--repeat));
 		}
 		a > img {
 			width: 100%;
@@ -27,6 +28,8 @@
 		#tool {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			position: sticky;
+			bottom: 0;
 		}
 		textarea:focus {
 			height: 12em;
@@ -63,10 +66,13 @@
 			addCard(i);
 		}
 	};
-	$('#perRow').onchange = () => document.documentElement.style.setProperty(
-		'--repeat',
-		$('#perRow').value || 'auto-fit'
-	);
+	$('#perRow').onchange = () => {
+		const v = $('#perRow').value;
+		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
+		$('#cards').style['grid-template-columns'] = v
+			? 'repeat(var(--repeat), 1fr)'
+			: '';
+	};
 	
 	let moveToEnd;
 	$('#end').onclick = () => moveToEnd = true;
