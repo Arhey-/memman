@@ -4,6 +4,10 @@
 		:root {
 			--repeat: auto-fit;
 		}
+		body {
+			color: #ccc;
+			background-color: #333;
+		}
 		#cards {
 			display: grid;
 			grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
@@ -28,8 +32,8 @@
 </head>
 
 <div id="cards"></div>
-<textarea onchange="eval($('textarea').value)"></textarea>
 <div id="tool">
+	<textarea onchange="eval($('textarea').value)"></textarea>
 	<button id="end">end</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' />
