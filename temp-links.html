@@ -4,7 +4,7 @@
 		:root {
 			--repeat: auto-fit;
 		}
-		body {
+		#cards {
 			display: grid;
 			grid-template-columns: repeat(var(--repeat), minmax(320px, 1fr));
 		}
@@ -27,13 +27,14 @@
 	</style>
 </head>
 
+<div id="cards"></div>
+<textarea onchange="eval($('textarea').value)"></textarea>
 <div id="tool">
 	<button id="end">end</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' />
 	<button id="show">show</button>
 </div>
-<textarea onchange="eval($('textarea').value)"></textarea>
 
 <script>
 	//todo storage event
@@ -46,7 +47,7 @@
 		img.src = i.src;
 		p.textContent = i.title;
 		a.append(p, img);
-		document.body.appendChild(a);
+		$('#cards').appendChild(a);
 	};
 	
 	$('#key').placeholder = key;
