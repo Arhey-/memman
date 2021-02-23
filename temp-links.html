@@ -28,12 +28,15 @@
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		}
+		textarea:focus {
+			height: 12em;
+		}
 	</style>
 </head>
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea onchange="eval($('textarea').value)"></textarea>
+	<textarea onchange="eval($('textarea').value)" placeholder="eval"></textarea>
 	<button id="end">end</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' />
@@ -88,7 +91,7 @@
 		p.textContent = t;
 		document.body.appendChild(p);
 	};
-	addEventListener('error', log);
+	addEventListener('error', e => log(e.message));
 
 	function save(key, o) {
 		const s = JSON.stringify(o);
