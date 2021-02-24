@@ -31,6 +31,9 @@
 			position: sticky;
 			bottom: 0;
 		}
+		button {
+			font-size: 1rem;
+		}
 		textarea:focus {
 			height: 12em;
 		}
@@ -40,7 +43,7 @@
 <div id="cards"></div>
 <div id="tool">
 	<textarea onchange="eval($('textarea').value)" placeholder="eval"></textarea>
-	<button id="end">end</button>
+	<label><input type="checkbox" id="move">move</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' />
 	<button id="show">show</button>
@@ -74,12 +77,22 @@
 			: '';
 	};
 	
-	let moveToEnd;
-	$('#end').onclick = () => moveToEnd = true;
+	let toMove;
 	document.body.addEventListener('click', e => {
-		if (!moveToEnd || 'A' != e.target.parentElement.tagName) return;
+		if (!$('#move').checked || 'A' != e.target.parentElement.tagName) return;
 		e.preventDefault();
-		moveToEnd = false;
+		
+		const a = e.target.parentElement;
+		if(toMove){
+			toMove.style.border='';
+			a.after(toMove);
+			toMove=null;
+		}else{
+			toMove=a;
+			a.style.border='1px solid blue';
+		}
+		
+		return;
 		const k = $('#key').value || key;
 		const items = load(k);
 		if (!items.length) return;
