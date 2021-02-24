@@ -45,7 +45,8 @@
 	<textarea onchange="eval($('textarea').value)" placeholder="eval"></textarea>
 	<label><input type="checkbox" id="move">move</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
-	<input id="key" type='text' />
+	<input id="key" type='text' list="keys" />
+	<datalist id="keys"></datalist>
 	<button id="show">show</button>
 </div>
 
@@ -128,6 +129,12 @@
 		}
 		return items;
 	}
+	
+	
+	$('#keys').append(Object.keys(localStorage).map(k => {
+		const o=create('option');
+		o.value=k;
+	}));
 	
 	addEventListener('message', e => {
 		log('message');
