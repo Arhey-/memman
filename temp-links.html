@@ -84,9 +84,9 @@
 		
 		const a = e.target.parentElement;
 		if(toMove){
-			moveAfter(toMove.href, a.href);
+			moveBefore(toMove.href, a.href);
 			toMove.style.border='';
-			a.after(toMove);
+			a.before(toMove);
 			toMove=null;
 		}else{
 			toMove=a;
@@ -94,16 +94,16 @@
 		}
 	});
 	
-	function moveAfter(url, afterUrl) {
-		if(url==afterUrl)return;
+	function moveBefore(url, beforeUrl) {
+		if(url==beforeUrl)return;
 		const k = $('#key').value || key;
 		const items = load(k);
 		if (!items.length) return;
 
 		const i = items.findIndex(i => i.url == url);
 		const [item] = items.splice(i, 1);
-		const afterI = items.findIndex(i => i.url == afterUrl);
-		items.splice(afterI, 0, item);
+		const beforeI = items.findIndex(i => i.url == beforeUrl);
+		items.splice(beforeI, 0, item);
 		save(k, items);
 	}
 	
