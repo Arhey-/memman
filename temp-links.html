@@ -134,6 +134,7 @@
 	$('#keys').append(Object.keys(localStorage).map(k => {
 		const o=create('option');
 		o.value=k;
+		return o;
 	}));
 	
 	addEventListener('message', e => {
