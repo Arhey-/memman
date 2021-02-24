@@ -84,6 +84,7 @@
 		
 		const a = e.target.parentElement;
 		if(toMove){
+			moveAfter(toMove.href, a.href);
 			toMove.style.border='';
 			a.after(toMove);
 			toMove=null;
@@ -91,20 +92,20 @@
 			toMove=a;
 			a.style.border='1px solid blue';
 		}
-		/*
-		return;
+	});
+	
+	function moveAfter(url, afterUrl) {
+		if(url==afterUrl)return;
 		const k = $('#key').value || key;
 		const items = load(k);
 		if (!items.length) return;
-		const a = e.target.parentElement;
-		const url = a.href;
+
 		const i = items.findIndex(i => i.url == url);
 		const [item] = items.splice(i, 1);
-		items.push(item);
+		const afterI = items.findIndex(i => i.url == afterUrl);
+		items.splice(afterI, 0, item);
 		save(k, items);
-		a.parentElement.append(a);
-		*/
-	});
+	}
 	
 	const log = t => {
 		const p = document.createElement('p');
