@@ -142,11 +142,15 @@
 		const k = e.data?.key || key;
 		let items = load(k);
 		const { url, src, title } = e.data;
-		//todo already exist
+		const i = items.findIndex(l => l.url == url);
+		if(~i) {
+			log(`already in "${k}"`);
+			return;
+		}
 		items.push({ url, src, title });
 		const s = JSON.stringify(items);
 		localStorage.setItem(k, s);
-		log(`saved (${s.length}) ${title}`);
+		log(`saved ${items.length} (${s.length/1000|0}) ${title}`);
 		addCard(e.data);
 	});
 	opener?.postMessage('ready', '*');
