@@ -59,6 +59,7 @@
 		const a=create('a'), p=create('p'), img=create('img');
 		a.href = i.url;
 		img.src = i.src;
+		img.loading = 'lazy';
 		p.textContent = i.title;
 		a.append(p, img);
 		$('#cards').appendChild(a);
