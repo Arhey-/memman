@@ -151,7 +151,7 @@
 		items.push({ url, src, title });
 		const s = JSON.stringify(items);
 		localStorage.setItem(k, s);
-		log(`saved ${items.length} (${s.length/1000|0}) ${title}`);
+		log(`saved ${items.length} (${s.length/1000|0}kb) ${title}`);
 		addCard(e.data);
 	});
 	opener?.postMessage('ready', '*');
