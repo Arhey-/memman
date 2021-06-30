@@ -42,7 +42,7 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea onchange="eval($('textarea').value)" placeholder="eval"></textarea>
+	<textarea placeholder="eval"></textarea>
 	<label><input type="checkbox" id="move">move</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' list="keys" />
@@ -77,6 +77,7 @@
 			addCard(i);
 		}
 	};
+	$('textarea').onchange= ()=> eval($('textarea').value);
 	$('#perRow').onchange = () => {
 		const v = $('#perRow').value;
 		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
