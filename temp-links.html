@@ -50,11 +50,17 @@
 	<button id="show">show</button>
 </div>
 
-<script>
+<script type="module">
+	import { downloadJsonString } from './download. js';
+
 	//todo storage event
 	const key = 'tempItems';
 	const $ = selector => document.querySelector(selector);
 	const create = name => document.createElement(name);
+	const json = () => {
+		const k = $('#key').value || key;
+		downloadJsonString(localStorage[k], `${k}.json`);
+	};
 	const addCard = i => {
 		const a=create('a'), p=create('p'), img=create('img');
 		a.href = i.url;
