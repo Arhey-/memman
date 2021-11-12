@@ -7,6 +7,7 @@
 		body {
 			color: #ccc;
 			background-color: #333;
+			margin: 0;
 		}
 		#cards {
 			display: grid;
@@ -27,12 +28,15 @@
 		}
 		#tool {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 			position: sticky;
 			bottom: 0;
 		}
 		button {
 			font-size: 1rem;
+		}
+		textarea {
+			grid-column: 1/5;
 		}
 		textarea:focus {
 			height: 12em;
@@ -42,7 +46,7 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea placeholder="eval"></textarea>
+	<textarea placeholder="eval help()"></textarea>
 	<label><input type="checkbox" id="move">move</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' list="keys" />
@@ -52,33 +56,35 @@
 
 <script type="module">
 	import { downloadJsonString } from './download.js';
+	import { html } from '../lib/html.js';
 
 	//todo storage event
 	const key = 'tempItems';
 	const $ = selector => document.querySelector(selector);
-	const create = name => document.createElement(name);
 	const json = () => {
 		const k = $('#key').value || key;
 		downloadJsonString(localStorage[k], `${k}.json`);
 	};
-	const addCard = i => {
-		const a=create('a'), p=create('p'), img=create('img');
-		a.href = i.url;
-		img.src = i.src;
-		img.loading = 'lazy';
-		p.textContent = i.title;
-		a.append(p, img);
-		$('#cards').appendChild(a);
-	};
+	const $cards = $('#cards')
+	const card = i => html.a(
+		{ href: i.url },
+		html.p(i.title),
+		html.img({
+			src: i.src,
+			loading: 'lazy',
+		})
+	);
+	const last = () => $cards.lastElementChild.scrollIntoView();
+	const help = () => alert('json(), last()');
 	
 	$('#key').placeholder = key;
 	$('#show').onclick = () => {
 		for (const i of load($('#key').value || key)) {
-			addCard(i);
+			$cards.append(card(i));
 		}
 	};
-	$('textarea').onchange= ()=> eval($('textarea').value);
-	$('#perRow').onchange = () => {
+	$('textarea').onchange = () => eval($('textarea').value);
+	$('#perRow').oninput = () => {
 		const v = $('#perRow').value;
 		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
 		$('#cards').style['grid-template-columns'] = v
@@ -138,12 +144,7 @@
 		return items;
 	}
 	
-	
-	$('#keys').append(...Object.keys(localStorage).map(k => {
-		const o=create('option');
-		o.value=k;
-		return o;
-	}));
+	$('#keys').append(...Object.keys(localStorage).map(k => html.option({ value: k })));
 	
 	addEventListener('message', e => {
 		log('message');
@@ -159,7 +160,7 @@
 		const s = JSON.stringify(items);
 		localStorage.setItem(k, s);
 		log(`saved ${items.length} (${s.length/1000|0}kb) ${title}`);
-		addCard(e.data);
+		$cards.append(card(e.data));
 	});
 	opener?.postMessage('ready', '*');
 </script>
