@@ -59,12 +59,20 @@
 	import { html } from '../lib/html.js';
 
 	//todo storage event
-	const key = 'tempItems';
+	const defaultKey = 'tempItems';
 	const $ = selector => document.querySelector(selector);
-	const json = () => {
-		const k = $('#key').value || key;
-		downloadJsonString(localStorage[k], `${k}.json`);
-	};
+
+	const $key = $('#key');
+	$key.placeholder = defaultKey;
+	try {
+		$key.value = localStorage.getItem('tmp-last-key') || '';
+	} catch {}
+	$key.onchange = () => localStorage.setItem('tmp-last-key', $key.value);
+	Object.defineProperty(window, 'key', {
+		get() { return $key.value || defaultKey }
+	});
+
+	const json = (k = key) => downloadJsonString(localStorage[k], `${k}.json`);
 	const $cards = $('#cards')
 	const card = i => html.a(
 		{ href: i.url },
@@ -77,9 +85,8 @@
 	const last = () => $cards.lastElementChild.scrollIntoView();
 	const help = () => alert('json(), last()');
 	
-	$('#key').placeholder = key;
 	$('#show').onclick = () => {
-		for (const i of load($('#key').value || key)) {
+		for (const i of load(key)) {
 			$cards.append(card(i));
 		}
 	};
@@ -111,15 +118,14 @@
 	
 	function moveBefore(url, beforeUrl) {
 		if(url==beforeUrl)return;
-		const k = $('#key').value || key;
-		const items = load(k);
+		const items = load(key);
 		if (!items.length) return;
 
 		const i = items.findIndex(i => i.url == url);
 		const [item] = items.splice(i, 1);
 		const beforeI = items.findIndex(i => i.url == beforeUrl);
 		items.splice(beforeI, 0, item);
-		save(k, items);
+		save(key, items);
 	}
 	
 	const log = t => {
