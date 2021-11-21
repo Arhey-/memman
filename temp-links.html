@@ -75,7 +75,7 @@
 	const help = () => alert('json(), last()');
 	const json = (k = key) => downloadJsonString(localStorage[k], `${k}.json`);
 	const card = i => html.a(
-		{ href: i.url },
+		{ href: i.url, target: '_blank' },
 		html.p(i.title),
 		html.img({
 			src: i.src,
