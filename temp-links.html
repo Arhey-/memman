@@ -91,13 +91,15 @@
 		}
 	};
 	$('textarea').onchange = () => eval($('textarea').value);
-	$('#perRow').oninput = () => {
+	$('#perRow').onchange = () => {
 		const v = $('#perRow').value;
 		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
 		$cards.style['grid-template-columns'] = v
 			? 'repeat(var(--repeat), 1fr)'
 			: '';
+		localStorage.setItem('tmp-last-columns', v);
 	};
+	$('#perRow').value = localStorage.getItem('tmp-last-columns')||'';
 	
 	let toMove;
 	document.body.addEventListener('click', e => {
@@ -138,6 +140,7 @@
 	function save(key, o) {
 		const s = JSON.stringify(o);
 		localStorage.setItem(key, s);
+		log(`saved ${o.length} ${s.length/1000|0}kb`);
 	}
 
 	function load(key) {
@@ -172,11 +175,26 @@
 			document.body.append(b);
 			return;
 		}
-		items.push({ url, src, title });
-		const s = JSON.stringify(items);
-		localStorage.setItem(k, s);
-		log(`saved ${items.length} (${s.length/1000|0}kb) ${title}`);
+		const link = { url, src, title };
+		items.push(link);
+		save(k, items);
 		$cards.append(card(e.data));
+
+		$key.addEventListener('change', () => {
+			const newKey = key;
+			if (!confirm(`move to ${newKey}?`)) {
+				return;
+			}
+			items.pop();
+			save(k, items)
+			const newItems = load(newKey);
+			if (~newItems.findIndex(l => l.url == url)) {
+				log(`already in "${newKey}"`);
+			} else {
+				newItems.push(link)
+				save(newKey, newItems)
+			}
+		})
 	});
 	opener?.postMessage('ready', '*');
 </script>
