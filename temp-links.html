@@ -72,8 +72,8 @@
 		get() { return $key.value || defaultKey }
 	});
 
+	const help = () => alert('json(), last()');
 	const json = (k = key) => downloadJsonString(localStorage[k], `${k}.json`);
-	const $cards = $('#cards')
 	const card = i => html.a(
 		{ href: i.url },
 		html.p(i.title),
@@ -82,8 +82,8 @@
 			loading: 'lazy',
 		})
 	);
+	const $cards = $('#cards')
 	const last = () => $cards.lastElementChild.scrollIntoView();
-	const help = () => alert('json(), last()');
 	
 	$('#show').onclick = () => {
 		for (const i of load(key)) {
@@ -94,7 +94,7 @@
 	$('#perRow').oninput = () => {
 		const v = $('#perRow').value;
 		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
-		$('#cards').style['grid-template-columns'] = v
+		$cards.style['grid-template-columns'] = v
 			? 'repeat(var(--repeat), 1fr)'
 			: '';
 	};
@@ -150,16 +150,26 @@
 		return items;
 	}
 	
-	$('#keys').append(...Object.keys(localStorage).map(k => html.option({ value: k })));
+	$('#keys').append(
+		...Object.keys(localStorage)
+			.map(k => html.option({ value: k }))
+	);
 	
 	addEventListener('message', e => {
 		log('message');
 		const k = e.data?.key || key;
-		let items = load(k);
+		const items = load(k);
 		const { url, src, title } = e.data;
 		const i = items.findIndex(l => l.url == url);
 		if(~i) {
 			log(`already in "${k}"`);
+			const b = html.button(() => {
+				b.remove()
+				items.splice(i, 1)
+				save(k, items)
+				log(`${title} removed`)
+			}, 'remove?');
+			document.body.append(b);
 			return;
 		}
 		items.push({ url, src, title });
