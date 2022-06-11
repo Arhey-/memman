@@ -91,15 +91,18 @@
 		}
 	};
 	$('textarea').onchange = () => eval($('textarea').value);
-	$('#perRow').onchange = () => {
-		const v = $('#perRow').value;
+
+	const $perRow = $('#perRow');
+	$perRow.onchange = e => {
+		const v = $perRow.value;
 		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
 		$cards.style['grid-template-columns'] = v
 			? 'repeat(var(--repeat), 1fr)'
 			: '';
-		localStorage.setItem('tmp-last-columns', v);
+		if (e) localStorage.setItem('tmp-last-columns', v);
 	};
-	$('#perRow').value = localStorage.getItem('tmp-last-columns')||'';
+	$perRow.value = localStorage.getItem('tmp-last-columns') || '';
+	$perRow.onchange();
 	
 	let toMove;
 	document.body.addEventListener('click', e => {
@@ -155,6 +158,7 @@
 	
 	$('#keys').append(
 		...Object.keys(localStorage)
+			.filter(k => k.startsWith('p-'))
 			.map(k => html.option({ value: k }))
 	);
 	
