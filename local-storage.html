@@ -46,7 +46,7 @@
 
         function viewKeys() {
             document.getElementById('ls').innerHTML = filteredKeys()
-                .map(k => `<li onclick="cat('${k}'')">${k}</li>`)
+                .map(k => `<li onclick="cat('${k}')">${k}</li>`)
                 .join('\n')
         }
 
