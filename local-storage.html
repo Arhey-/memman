@@ -3,11 +3,21 @@
 <head>
     <title>localStorage</title>
     <meta content="width=device-width, initial-scale=1" name="viewport">
+    <style>
+        body {
+            margin: 0.5rem;
+        }
+
+        #filter {
+            width: calc(100vw - 1rem);
+        }
+    </style>
 </head>
 
 <body>
     <p>
-        <button id="downloadAll">download all as json</button>
+        <button id="downloadAll">download as json</button>
+        <input type="text" id="filter" placeholder="keys not includes">
     </p>
     keys:
     <ul id="ls"></ul>
@@ -15,18 +25,28 @@
     <script type="module">
         import { downloadJsonString } from './download.js'
 
+        const $filter = document.getElementById('filter')
+        const filteredKeys = () => Object
+            .keys(localStorage)
+            .filter(k => !k.includes($filter.value))
+
         document.getElementById('downloadAll').onclick = () => {
             const o = {};
-            for (const k of Object.keys(localStorage)) {
+            for (const k of filteredKeys()) {
                 o[k] = localStorage[k]
             }
             const j = JSON.stringify(o, null, 2)
             downloadJsonString(j, location.host + '.json')
         }
 
-        document.getElementById('ls').innerHTML = Object.keys(localStorage)
-            .map(k => `<li>${k}</li>`)
-            .join('\n')
+        $filter.onchange = viewKeys;
+        viewKeys()
+
+        function viewKeys() {
+            document.getElementById('ls').innerHTML = filteredKeys()
+                .map(k => `<li>${k}</li>`)
+                .join('\n')
+        }
     </script>
 </body>
 
