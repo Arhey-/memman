@@ -1,0 +1,33 @@
+<html>
+
+<head>
+    <title>localStorage</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+</head>
+
+<body>
+    <p>
+        <button id="downloadAll">download all as json</button>
+    </p>
+    keys:
+    <ul id="ls"></ul>
+
+    <script type="module">
+        import { downloadJsonString } from './download.js'
+
+        document.getElementById('downloadAll').onclick = () => {
+            const o = {};
+            for (const k of Object.keys(localStorage)) {
+                o[k] = localStorage[k]
+            }
+            const j = JSON.stringify(o, null, 2)
+            downloadJsonString(j, location.host + '.json')
+        }
+
+        document.getElementById('ls').innerHTML = Object.keys(localStorage)
+            .map(k => `<li>${k}</li>`)
+            .join('\n')
+    </script>
+</body>
+
+</html>
