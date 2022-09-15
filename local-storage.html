@@ -30,7 +30,7 @@
         const $filter = document.getElementById('filter')
         const filteredKeys = () => Object
             .keys(localStorage)
-            .filter(k => !k.includes($filter.value))
+            .filter(k => !$filter.value || !k.includes($filter.value))
 
         document.getElementById('downloadAll').onclick = () => {
             const o = {};
