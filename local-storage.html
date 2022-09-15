@@ -27,9 +27,10 @@
     <script>
         addEventListener('error', function (e) {
             e = e || 'undefined error';
-            var name = e.name || e.code || 'no name/code',
+            var name = e.name || e.code,
                 m = e.message || e;
-            alert(name + ': ' + m);
+            if (name) name += ': ';
+            alert(name + m);
         })
     </script>
 
