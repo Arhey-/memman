@@ -24,6 +24,15 @@
 
     <pre id="code"></pre>
 
+    <script>
+        addEventListener('error', function (e) {
+            e = e || 'undefined error';
+            var name = e.name || e.code || 'no name/code',
+                m = e.message || e;
+            alert(name + ': ' + m);
+        })
+    </script>
+
     <script type="module">
         import { downloadJsonString } from './download.js'
 
