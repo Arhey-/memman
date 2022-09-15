@@ -22,6 +22,8 @@
     keys:
     <ul id="ls"></ul>
 
+    <pre id="code"></pre>
+
     <script type="module">
         import { downloadJsonString } from './download.js'
 
@@ -44,8 +46,12 @@
 
         function viewKeys() {
             document.getElementById('ls').innerHTML = filteredKeys()
-                .map(k => `<li>${k}</li>`)
+                .map(k => `<li onclick="cat('${k}'')">${k}</li>`)
                 .join('\n')
+        }
+
+        function cat(key) {
+            document.getElementById('code').innerhtml = localstorage[key]
         }
     </script>
 </body>
