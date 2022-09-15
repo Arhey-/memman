@@ -1,77 +1,87 @@
 <html>
 
 <head>
-    <title>localStorage</title>
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-    <style>
-        body {
-            margin: 0.5rem;
-        }
-    
-        #filter {
-            width: calc(100vw - 1rem);
-        }
-    
-        #code {
-            width: calc(100vw - 1rem);
-            overflow: scroll;
-            padding-bottom: 1rem;
-        }
-    </style>
+	<title>localStorage</title>
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<style>
+		body {
+			margin: 0.5rem;
+		}
+
+		#filter {
+			width: calc(100vw - 1rem);
+		}
+
+		#code {
+			width: calc(100vw - 1rem);
+			overflow: scroll;
+			padding-bottom: 1rem;
+		}
+	</style>
 </head>
 
 <body>
-    <p>
-        <button id="downloadAll">download as json</button>
-        <input type="text" id="filter" placeholder="keys not includes">
-    </p>
-    keys:
-    <ul id="ls"></ul>
+	<p>
+		<button id="downloadAll">download as json</button>
+		<input type="text" id="filter" placeholder="keys not includes">
+	</p>
+	keys:
+	<ul id="ls"></ul>
 
-    <pre id="code"></pre>
+	<label><input type="checkbox" id="format">format object or arrays</label>
+	<pre id="code"></pre>
 
-    <script>
-        addEventListener('error', function (e) {
-            e = e || 'undefined error';
-            var name = e.name || e.code,
-                m = e.message || e;
-            if (name) name += ': ';
-            alert(name + m);
-        })
-    </script>
+	<script>
+		addEventListener('error', function (e) {
+			e = e || 'undefined error';
+			var name = e.name || e.code,
+				m = e.message || e;
+			if (name) name += ': ';
+			alert(name + m);
+		})
+	</script>
 
-    <script type="module">
-        import { downloadJsonString } from './download.js'
+	<script type="module">
+		import { downloadJsonString } from './download.js'
 
-        const $filter = document.getElementById('filter')
-        const filteredKeys = () => Object
-            .keys(localStorage)
-            .filter(k => !$filter.value || !k.includes($filter.value))
+		const $filter = document.getElementById('filter')
+		const filteredKeys = () => Object
+			.keys(localStorage)
+			.filter(k => !$filter.value || !k.includes($filter.value))
 
-        document.getElementById('downloadAll').onclick = () => {
-            const o = {};
-            for (const k of filteredKeys()) {
-                o[k] = localStorage[k]
-            }
-            const j = JSON.stringify(o, null, 2)
-            downloadJsonString(j, location.host + '.json')
-        }
+		document.getElementById('downloadAll').onclick = () => {
+			const o = {};
+			for (const k of filteredKeys()) {
+				o[k] = localStorage[k]
+			}
+			const j = JSON.stringify(o, null, 2)
+			downloadJsonString(j, location.host + '.json')
+		}
 
-        $filter.onchange = viewKeys;
-        viewKeys()
+		$filter.onchange = viewKeys;
+		viewKeys()
 
-        function viewKeys() {
-            document.getElementById('ls').innerHTML = filteredKeys()
-                .map(k => `<li onclick="cat('${k}')">${k}</li>`)
-                .join('\n')
-        }
+		function viewKeys() {
+			document.getElementById('ls').innerHTML = filteredKeys()
+				.sort()
+				.map(k => `<li onclick="cat('${k}')">${k}</li>`)
+				.join('\n')
+		}
 
-        function cat(key) {
-            document.getElementById('code').innerHTML = localStorage[key]
-        }
+		function cat(key) {
+			let content = localStorage[key];
+			if (
+				document.getElementById('format').checked
+				&& (content?.startsWith('{') || content?.startsWith('['))
+			) try {
+				const o = JSON.parse(content)
+				content = JSON.stringify(o, null, 2)
+			} catch { };
+			document.getElementById('code').innerHTML = content
+		}
 
-        window.cat = cat; // dirty
-    </script>
+		window.cat = cat; // dirty
+	</script>
 </body>
 
 </html>
