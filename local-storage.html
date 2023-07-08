@@ -49,7 +49,7 @@
 		const $notHas = document.getElementById('notHas')
 		const filteredKeys = () => {
 			const has = $has.value && new RegExp($has.value), ex = $notHas.value;
-			Object.keys(localStorage)
+			return Object.keys(localStorage)
 				.filter(k => (!has || has.test(k)) && (!ex || !k.includes(ex)))
 		}
 
