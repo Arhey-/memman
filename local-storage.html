@@ -23,7 +23,7 @@
 <body>
 	<p>
 		<button id="downloadAll">download as json</button>
-		<input type="text" id="has" placeholder="keys includes">
+		<input type="text" id="has" placeholder="keys includes (regexp)">
 		<input type="text" id="notHas" placeholder="keys not includes">
 	</p>
 	keys:
@@ -47,10 +47,11 @@
 
 		const $has = document.getElementById('has')
 		const $notHas = document.getElementById('notHas')
-		const filteredKeys = () => Object.keys(localStorage).filter(k => {
-			const has = $has.value, ex = $notHas.value;
-			return (!has || k.includes(has)) && (!ex || !k.includes(ex))
-		})
+		const filteredKeys = () => {
+			const has = $has.value && new RegExp($has.value), ex = $notHas.value;
+			Object.keys(localStorage)
+				.filter(k => (!has || has.test(k)) && (!ex || !k.includes(ex)))
+		}
 
 		document.getElementById('downloadAll').onclick = () => {
 			const o = {};
