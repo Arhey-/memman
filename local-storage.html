@@ -56,10 +56,18 @@
 		document.getElementById('downloadAll').onclick = () => {
 			const o = {};
 			for (const k of filteredKeys()) {
-				o[k] = localStorage[k]
+				o[k] = getItem(k)
 			}
 			const j = JSON.stringify(o, null, 2)
 			downloadJsonString(j, location.host + '.json')
+		}
+
+		function getItem(key) {
+			const s = localStorage[key];
+			if (['{', '['].includes(s[0])) try {
+				return JSON.parse(s)
+			} catch { }
+			return s
 		}
 
 		$has.onchange = viewKeys;
@@ -74,15 +82,10 @@
 		}
 
 		function cat(key) {
-			let content = localStorage[key];
-			if (
+			document.getElementById('code').innerHTML =
 				document.getElementById('format').checked
-				&& (content?.startsWith('{') || content?.startsWith('['))
-			) try {
-				const o = JSON.parse(content)
-				content = JSON.stringify(o, null, 2)
-			} catch { };
-			document.getElementById('code').innerHTML = content
+					? JSON.stringify(getItem(key), null, 2)
+					: localStorage[key]
 		}
 
 		window.cat = cat; // dirty
