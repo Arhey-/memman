@@ -58,7 +58,7 @@
 			for (const k of filteredKeys()) {
 				o[k] = getItem(k)
 			}
-			const j = JSON.stringify(o, null, 2)
+			const j = JSON.stringify(o)
 			downloadJsonString(j, location.host + '.json')
 		}
 
