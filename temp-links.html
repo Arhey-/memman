@@ -180,6 +180,13 @@
 				log(`${title} removed`)
 			}, 'remove?');
 			document.body.append(b);
+			const bSrc = html.button(() => {
+				bSrc.remove()
+				items[i].src = src;
+				save(k, items)
+				log(`${i} src updated`)
+			}, 'update src');
+			document.body.append(bSrc);
 			return;
 		}
 		const link = { url, src, title };
