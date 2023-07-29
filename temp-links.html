@@ -27,6 +27,9 @@
 			width: 100%;
 			aspect-ratio: 16 / 9;
 		}
+		a.next {
+			border: 1px solid green;
+		}
 		#tool {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -37,7 +40,7 @@
 			font-size: 1rem;
 		}
 		textarea {
-			grid-column: 1/5;
+			grid-column: 1/-1;
 		}
 		textarea:focus {
 			height: 12em;
@@ -49,6 +52,7 @@
 <div id="tool">
 	<textarea placeholder="eval help()"></textarea>
 	<label><input type="checkbox" id="move">move</label>
+	<label><input type="checkbox" id="prev">prev</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<input id="key" type='text' list="keys" />
 	<datalist id="keys"></datalist>
@@ -88,7 +92,9 @@
 	
 	$('#show').onclick = () => {
 		for (const i of load(key)) {
-			$cards.append(card(i));
+			const el = card(i);
+			if(i.prev) el.classList.add('next');
+			$cards.append(el);
 		}
 	};
 	$('textarea').onchange = () => eval($('textarea').value);
@@ -104,6 +110,23 @@
 	};
 	$perRow.value = localStorage.getItem('tmp-last-columns') || '';
 	$perRow.onchange();
+	
+	let beNext;
+	document.body.addEventListener('click', e => {
+		if (!$('#prev').checked || 'A' != e.target.parentElement.tagName) return;
+		e.preventDefault();
+		
+		const a = e.target.parentElement;
+		if(beNext){
+			moveAfter(beNext.href, a.href);
+			beNext.style.border='';
+			a.after(beNext);
+			beNext=null;
+		}else{
+			beNext=a;
+			a.style.border='1px solid blue';
+		}
+	});
 	
 	let toMove;
 	document.body.addEventListener('click', e => {
@@ -121,6 +144,19 @@
 			a.style.border='1px solid blue';
 		}
 	});
+
+	function moveAfter(url, prevUrl) {
+		if(url==prevUrl)return;
+		const items = load(key);
+		if (!items.length) return;
+
+		const i = items.findIndex(i => i.url == url);
+		const [next] = items.splice(i, 1);
+		next.prev = prevUrl;
+		const prevIdx = items.findIndex(i => i.url == prevUrl);
+		items.splice(prevIdx+1, 0, next);
+		save(key, items);
+	}
 	
 	function moveBefore(url, beforeUrl) {
 		if(url==beforeUrl)return;
