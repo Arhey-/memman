@@ -1,5 +1,6 @@
 <head>
 	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<meta name="color-scheme" content="dark light">
 	<style>
 		:root {
 			--repeat: auto-fit;
@@ -32,7 +33,7 @@
 		}
 		#tool {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
 			position: sticky;
 			bottom: 0;
 		}
@@ -50,7 +51,10 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea placeholder="eval help()"></textarea>
+	<textarea placeholder="eval help()">
+		// top()
+		// last()
+	</textarea>
 	<label><input type="checkbox" id="move">move</label>
 	<label><input type="checkbox" id="prev">prev</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
@@ -88,6 +92,7 @@
 		})
 	);
 	const $cards = $('#cards')
+	const top = () => $cards.scrollIntoView();
 	const last = () => $cards.lastElementChild.scrollIntoView();
 	
 	$('#show').onclick = () => {
@@ -119,6 +124,7 @@
 			moveAfter(beNext.href, a.href);
 			beNext.style.border='';
 			a.after(beNext);
+			beNext.classList.add('next');
 			beNext=null;
 		}else{
 			beNext=a;
