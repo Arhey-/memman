@@ -80,7 +80,7 @@
 	const help = () => alert('json(), last()');
 	const json = (k = key) => downloadJsonString(localStorage[k], `${k}.json`);
 	const card = i => html.a(
-		{ href: i.url, target: '_blank' },
+		{ href: i.url, target: '_blank', className: i.prev ?'next' :'' },
 		html.p(i.title),
 		html.img({
 			src: i.src,
@@ -91,10 +91,8 @@
 	const last = () => $cards.lastElementChild.scrollIntoView();
 	
 	$('#show').onclick = () => {
-		for (const i of load(key)) {
-			const el = card(i);
-			if(i.prev) el.classList.add('next');
-			$cards.append(el);
+		for (const i of sort(load(key))) {
+			$cards.append(card(i));
 		}
 	};
 	$('textarea').onchange = () => eval($('textarea').value);
@@ -198,6 +196,41 @@
 			.filter(k => k.startsWith('p-'))
 			.map(k => html.option({ value: k }))
 	);
+
+	function test(shuffle) {
+		const o=load(key);
+		const _s=[...o];
+		if(shuffle) _s.sort(()=>Math.random()-0.5);
+		const s=sort(_s);
+		for (let i=0;i<o.length;i++) {
+			$cards.append(card(o[i]), card(s[i]));
+		}
+	}
+
+	function sort(list) {
+		let wait,s=[], label=`sort ${list.length} items`;
+		console.time(label);
+		do {
+			if(wait) list=wait;
+			wait=[];
+			for(const i of list){
+				if(!i.prev){
+					s.push(i);
+					continue;
+				}
+				const n=s.findIndex(si=>si.url==i.prev);
+				if(n > -1) {
+					s.splice(n+1,0,i);
+				} else if (list.some(li=>li.url==i.prev)){ 
+					wait.push(i);
+				} else {
+					s.push(i);
+				}
+			}
+		} while (wait.length);
+		console.timeEnd(label);
+		return s;
+	}
 	
 	addEventListener('message', e => {
 		log('message');
