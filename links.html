@@ -71,8 +71,8 @@
 // last()
 	</textarea>
 	<button id="export">export</button>
-	<label><input type="checkbox" id="prev" disabled>prev</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
+	<label><input type="checkbox" id="prev">prev</label>
 	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
 </div>
@@ -158,6 +158,32 @@
 	$perRow.value = localStorage.getItem('links-columns') || '';
 	$perRow.onchange();
 
+	const $prev = $('#prev')
+	let beNext
+	$prev.onchange = () => {
+		if ($prev.checked || !beNext) return;
+		beNext.style.border = ''
+		beNext = null
+	}
+	document.body.addEventListener('click', e => {
+		if (!$prev.checked || 'A' != e.target.parentElement.tagName) return;
+		e.preventDefault()
+		const a = e.target.parentElement
+		if (beNext) {
+			const next = beNext
+			beNext.style.border = ''
+			beNext = null
+			if (a == next) return;
+			db.update('links', next.href, { prev: a.href }).then(() => {
+				a.after(next)
+				next.classList.add('next')
+			}).catch(log)
+		} else {
+			beNext = a
+			a.style.border = '1px solid blue'
+		}
+	})
+
 	function sort(list) {
 		let wait, s = [], label = `sort ${list.length} items`;
 		console.time(label);
@@ -180,7 +206,7 @@
 			}
 		} while (wait.length);
 		console.timeEnd(label);
-		return s;
+		return s
 	}
 
 	addEventListener('message', async e => {
