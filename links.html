@@ -49,6 +49,10 @@
 			font-size: 1rem;
 		}
 
+		#tagsInc {
+			background-color: #385539;
+		}
+
 		textarea {
 			grid-column: 1/-1;
 		}
@@ -62,15 +66,14 @@
 <div id="cards"></div>
 <div id="tool">
 	<textarea placeholder="eval help()">
-		/* db.getAll('links')
-			.then(l => json(JSON.stringify(l), 'links'))
-			.catch(log) */
-		// json(s, 'links')
-		// top()
-		// last()
+// json(s, 'links')
+// top()
+// last()
 	</textarea>
+	<button id="export">export</button>
 	<label><input type="checkbox" id="prev" disabled>prev</label>
 	<input id="perRow" type='number' placeholder='auto-fit' />
+	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
 </div>
 
@@ -94,7 +97,7 @@
 		html.p(i.name || i.title),
 		html.img({ src: i.src, loading: 'lazy' })
 	);
-	const $cards = $('#cards')
+	const $cards = $('#cards'), $tagsInc = $('#tagsInc')
 	const top = () => $cards.scrollIntoView();
 	const last = () => $cards.lastElementChild.scrollIntoView();
 
@@ -111,12 +114,37 @@
 	})
 	await db.ready
 
+	localStorage.getItem('links-tags')
+		?.split(',')
+		.forEach(t => $tagsInc.append(html.option({ value: t }, t)))
 	$('#show').onclick = async () => {
-		const links = await db.getAll('links') // TODO tags
+		$cards.innerHTML = ''
+		const inc = [...$tagsInc.selectedOptions].map(o => o.value)
+		const links = [], allTags = new Set
+		await db.each('links', l => {
+			if (inc.every(t => l.tags.includes(t))) links.push(l)
+			l.tags.forEach(t => allTags.add(t))
+		})
+		const s = [...allTags].sort().toString()
+		if (s != localStorage.getItem('links-tags')) {
+			localStorage.setItem('links-tags', s)
+			const was = [...$tagsInc.options].map(o => o.value)
+			for (const t of allTags) {
+				if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
+			}
+		}
 		for (const i of sort(links)) {
 			$cards.append(card(i));
 		}
-	};
+	}
+	$('#export').onclick = () => {
+		const name = prompt('{name}.json')
+		if (!name) return;
+		db.getAll('links').then(ls => {
+			log(`export ${ls.length} links`)
+			json(JSON.stringify(ls), name)
+		}).catch(log)
+	}
 
 	const $perRow = $('#perRow');
 	$perRow.onchange = e => {
