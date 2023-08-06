@@ -220,17 +220,29 @@
 			return
 		}
 		log(`already in ${i.tags}`);
+		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
 		const b = html.button(async () => {
 			b.remove()
 			await db.delete('links', url)
 			log(`"${name || title}" removed\n${url}`)
-		}, 'remove?');
+		}, 'remove?')
 		const bSrc = html.button(async () => {
 			bSrc.remove()
 			await db.update('links', url, { src })
 			log('src updated')
-		}, 'update src');
-		document.body.append(b, bSrc);
+		}, 'update src')
+		const bTags = html.button(async () => {
+			const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+			if (!tags.length) return alert('select least one tag')
+			const { eqSet } = await import('../lib/diff.js')
+			if (eqSet(tags, i.tags)) return;
+			bTags.disabled = true
+			await db.update('links', url, { tags })
+			i.tags = tags
+			bTags.disabled = false
+			log('tags updated')
+		}, 'update tags')
+		document.body.append(b, bTags, bSrc);
 	});
 	opener?.postMessage('ready', '*');
 </script>
