@@ -185,19 +185,36 @@
 
 	addEventListener('message', async e => {
 		log(`message ${e.data?.url || e.data}`)
+		document.body.append(html.input({
+			placeholder: 'new tags',
+			onchange(e) {
+				const tags = e.target.value
+					.split(' ')
+					.flatMap(s => s.split(','))
+					.map(s => s.trim())
+					.filter(Boolean)
+				if (!tags.length) return;
+				const was = [...$tagsInc.options].map(o => o.value)
+				for (const t of tags) {
+					if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
+				}
+				const s = [...new Set([...was, ...tags])].sort().toString()
+				if (s != localStorage.getItem('links-tags')) {
+					localStorage.setItem('links-tags', s)
+				}
+			}
+		}));
 		const { url, src, name, title } = e.data
 		const i = await db.get('links', url)
 		if (!i) {
 			$cards.append(card(e.data))
-			const t = html.input({ placeholder: 'tags' })
-			document.body.append(t);
 			const b = html.button(async () => {
+				const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+				if (!tags.length) return alert('select least one tag')
 				b.remove()
-				t.remove()
-				const tags = (t.value || 'tmp').split(' ')
 				const link = { url, src, name: name || title, tags }
 				await db.add('links', link)
-				log(`${url} saved`)
+				log('saved\n' + url)
 			}, 'add');
 			document.body.append(b);
 			return
@@ -206,16 +223,14 @@
 		const b = html.button(async () => {
 			b.remove()
 			await db.delete('links', url)
-			log(`${name || title} removed
-${url}`)
+			log(`"${name || title}" removed\n${url}`)
 		}, 'remove?');
-		document.body.append(b);
 		const bSrc = html.button(async () => {
 			bSrc.remove()
 			await db.update('links', url, { src })
-			log(`${i} src updated`)
+			log('src updated')
 		}, 'update src');
-		document.body.append(bSrc);
+		document.body.append(b, bSrc);
 	});
 	opener?.postMessage('ready', '*');
 </script>
