@@ -1,0 +1,193 @@
+<head>
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<meta name="color-scheme" content="dark light">
+	<style>
+		:root {
+			--repeat: auto-fit;
+		}
+
+		body {
+			color: #ccc;
+			background-color: #333;
+			margin: 0;
+		}
+
+		#cards {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		}
+
+		a {
+			position: relative;
+		}
+
+		a>p {
+			color: white;
+			background-color: rgba(0, 0, 0, 0.3);
+			margin: 5px;
+			position: absolute;
+			font-size: calc(1rem / var(--repeat));
+		}
+
+		a>img {
+			width: 100%;
+			aspect-ratio: 16 / 9;
+		}
+
+		a.next {
+			border: 1px solid green;
+		}
+
+		#tool {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+			position: sticky;
+			bottom: 0;
+		}
+
+		button {
+			font-size: 1rem;
+		}
+
+		textarea {
+			grid-column: 1/-1;
+		}
+
+		textarea:focus {
+			height: 12em;
+		}
+	</style>
+</head>
+
+<div id="cards"></div>
+<div id="tool">
+	<textarea placeholder="eval help()">
+		/* db.getAll('links')
+			.then(l => json(JSON.stringify(l), 'links'))
+			.catch(log) */
+		// json(s, 'links')
+		// top()
+		// last()
+	</textarea>
+	<label><input type="checkbox" id="prev" disabled>prev</label>
+	<input id="perRow" type='number' placeholder='auto-fit' />
+	<button id="show">show</button>
+</div>
+
+<script type="module">
+	import { downloadJsonString } from './download.js';
+	import { html } from '../lib/html.js';
+	import { DB } from '../lib/db.js';
+
+	addEventListener('error', e => log(e.message));
+	function log(t) {
+		const p = document.createElement('p');
+		p.textContent = t;
+		document.body.appendChild(p);
+	}
+
+	const $ = selector => document.querySelector(selector);
+	const help = () => alert('json(name), last()');
+	const json = (s, name) => downloadJsonString(s, `${name}.json`); // TODO 
+	const card = i => html.a(
+		{ href: i.url, target: '_blank', className: i.prev ? 'next' : '' },
+		html.p(i.name || i.title),
+		html.img({ src: i.src, loading: 'lazy' })
+	);
+	const $cards = $('#cards')
+	const top = () => $cards.scrollIntoView();
+	const last = () => $cards.lastElementChild.scrollIntoView();
+
+	$('textarea').onchange = () => eval($('textarea').value);
+
+	const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
+		if (e.oldVersion == 0 && e.newVersion == 1) {
+			const db = event.target.result;
+			const s = db.createObjectStore('links', { keyPath: 'url' });
+			// s.createIndex('tags', 'tags', { unique: false }); // multi
+		} else {
+			throw Error('todo uprade db')
+		}
+	})
+	await db.ready
+
+	$('#show').onclick = async () => {
+		const links = await db.getAll('links') // TODO tags
+		for (const i of sort(links)) {
+			$cards.append(card(i));
+		}
+	};
+
+	const $perRow = $('#perRow');
+	$perRow.onchange = e => {
+		const v = $perRow.value;
+		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
+		$cards.style['grid-template-columns'] = v
+			? 'repeat(var(--repeat), 1fr)'
+			: '';
+		if (e) localStorage.setItem('links-columns', v);
+	};
+	$perRow.value = localStorage.getItem('links-columns') || '';
+	$perRow.onchange();
+
+	function sort(list) {
+		let wait, s = [], label = `sort ${list.length} items`;
+		console.time(label);
+		do {
+			if (wait) list = wait;
+			wait = [];
+			for (const i of list) {
+				if (!i.prev) {
+					s.push(i);
+					continue;
+				}
+				const n = s.findIndex(si => si.url == i.prev);
+				if (n > -1) {
+					s.splice(n + 1, 0, i);
+				} else if (list.some(li => li.url == i.prev)) {
+					wait.push(i);
+				} else {
+					s.push(i);
+				}
+			}
+		} while (wait.length);
+		console.timeEnd(label);
+		return s;
+	}
+
+	addEventListener('message', async e => {
+		log(`message ${e.data?.url || e.data}`)
+		const { url, src, name, title } = e.data
+		const i = await db.get('links', url)
+		if (!i) {
+			$cards.append(card(e.data))
+			const t = html.input({ placeholder: 'tags' })
+			document.body.append(t);
+			const b = html.button(async () => {
+				b.remove()
+				t.remove()
+				const tags = (t.value || 'tmp').split(' ')
+				const link = { url, src, name: name || title, tags }
+				await db.add('links', link)
+				log(`${url} saved`)
+			}, 'add');
+			document.body.append(b);
+			return
+		}
+		log(`already in ${i.tags}`);
+		const b = html.button(async () => {
+			b.remove()
+			await db.delete('links', url)
+			log(`${name || title} removed
+${url}`)
+		}, 'remove?');
+		document.body.append(b);
+		const bSrc = html.button(async () => {
+			bSrc.remove()
+			await db.update('links', url, { src })
+			log(`${i} src updated`)
+		}, 'update src');
+		document.body.append(bSrc);
+	});
+	opener?.postMessage('ready', '*');
+</script>
