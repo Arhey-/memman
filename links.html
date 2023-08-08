@@ -38,6 +38,10 @@
 			border: 1px solid green;
 		}
 
+		a.next.gap {
+			border-style: dashed;
+		}
+
 		#tool {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
@@ -91,7 +95,7 @@
 
 	const $ = selector => document.querySelector(selector);
 	const card = i => html.a(
-		{ href: i.url, target: '_blank', className: i.prev ? 'next' : '' },
+		{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
 		html.p(i.name || i.title),
 		html.img({ src: i.src, loading: 'lazy' })
 	);
@@ -141,7 +145,7 @@
 				if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
 			}
 		}
-		for (const i of sort(links)) {
+		for (const i of prevMods(sort(links))) {
 			$cards.append(card(i));
 		}
 	}
@@ -218,6 +222,15 @@
 		return s
 	}
 
+	const prevGap = Symbol('prevGap')
+	function prevMods(list) {
+		const urls = new Set(list.map(l => l.url))
+		list.forEach((l, i) => {
+			if (l.prev && l.prev != list[i - 1]?.url) l[prevGap] = true
+		})
+		return list
+	}
+
 	addEventListener('message', async e => {
 		log(`message ${e.data?.url || e.data}`)
 		document.body.append(html.input({
@@ -245,7 +258,7 @@
 			$cards.append(card(e.data))
 			const b = html.button(async () => {
 				const tags = [...$tagsInc.selectedOptions].map(o => o.value)
-				if (!tags.length) return alert('select least one tag')
+				if (!tags.length) return log('select least one tag')
 				b.remove()
 				const link = { url, src, name: name || title, tags }
 				await db.add('links', link)
@@ -268,7 +281,7 @@
 		}, 'update src')
 		const bTags = html.button(async () => {
 			const tags = [...$tagsInc.selectedOptions].map(o => o.value)
-			if (!tags.length) return alert('select least one tag')
+			if (!tags.length) return log('select least one tag')
 			const { eqSet } = await import('../lib/diff.js')
 			if (eqSet(tags, i.tags)) return;
 			bTags.disabled = true
