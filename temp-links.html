@@ -51,9 +51,10 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea placeholder="eval help()">
-		// top()
-		// last()
+	<textarea placeholder="eval">
+// top()
+// last()
+// view()
 	</textarea>
 	<label><input type="checkbox" id="move">move</label>
 	<label><input type="checkbox" id="prev">prev</label>
@@ -64,7 +65,6 @@
 </div>
 
 <script type="module">
-	import { downloadJsonString } from './download.js';
 	import { html } from '../lib/html.js';
 
 	//todo storage event
@@ -81,8 +81,6 @@
 		get() { return $key.value || defaultKey }
 	});
 
-	const help = () => alert('json(), last()');
-	const json = (k = key) => downloadJsonString(localStorage[k], `${k}.json`);
 	const card = i => html.a(
 		{ href: i.url, target: '_blank', className: i.prev ?'next' :'' },
 		html.p(i.title),
@@ -94,6 +92,12 @@
 	const $cards = $('#cards')
 	const top = () => $cards.scrollIntoView();
 	const last = () => $cards.lastElementChild.scrollIntoView();
+	function view(urlPart) {
+		if (!urlPart) prompt('part of url')
+		if (urlPart) [...document.querySelectorAll('a')]
+			.find(a => a.href.includes(urlPart))
+			?.scrollIntoView()
+	}
 	
 	$('#show').onclick = () => {
 		for (const i of sort(load(key))) {

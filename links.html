@@ -65,10 +65,12 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea placeholder="eval help()">
-// json(s, 'links')
+	<textarea placeholder="eval">
+//prevent eval -- uncomment to don't eval on change
 // top()
 // last()
+// view()
+// migrate(localStorage.getItem('tempItems'), ['tmp']).catch(log)
 	</textarea>
 	<button id="export">export</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
@@ -83,15 +85,11 @@
 	import { DB } from '../lib/db.js';
 
 	addEventListener('error', e => log(e.message));
-	function log(t) {
-		const p = document.createElement('p');
-		p.textContent = t;
-		document.body.appendChild(p);
+	function log(...t) {
+		document.body.append(html.p(null, ...t));
 	}
 
 	const $ = selector => document.querySelector(selector);
-	const help = () => alert('json(name), last()');
-	const json = (s, name) => downloadJsonString(s, `${name}.json`); // TODO 
 	const card = i => html.a(
 		{ href: i.url, target: '_blank', className: i.prev ? 'next' : '' },
 		html.p(i.name || i.title),
@@ -100,8 +98,18 @@
 	const $cards = $('#cards'), $tagsInc = $('#tagsInc')
 	const top = () => $cards.scrollIntoView();
 	const last = () => $cards.lastElementChild.scrollIntoView();
+	function view(urlPart) {
+		if (!urlPart) prompt('part of url')
+		if (urlPart) [...document.querySelectorAll('a')]
+			.find(a => a.href.includes(urlPart))
+			?.scrollIntoView()
+	}
 
-	$('textarea').onchange = () => eval($('textarea').value);
+	const $textarea = $('textarea')
+	$textarea.onchange = () => {
+		const s = $textarea.value
+		if (s && !s.startsWith('prevent eval')) log(eval(s))
+	}
 
 	const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 		if (e.oldVersion == 0 && e.newVersion == 1) {
@@ -109,7 +117,7 @@
 			const s = db.createObjectStore('links', { keyPath: 'url' });
 			// s.createIndex('tags', 'tags', { unique: false }); // multi
 		} else {
-			throw Error('todo uprade db')
+			throw Error(`todo uprade db from v${e.oldVersion} to ${e.newVersion}`)
 		}
 	})
 	await db.ready
@@ -138,11 +146,12 @@
 		}
 	}
 	$('#export').onclick = () => {
-		const name = prompt('{name}.json')
+		const d = new Date().toLocaleDateString('eu').split('.').reverse().join('_')
+		const name = prompt('{name}.json', 'links_' + d.slice(2))
 		if (!name) return;
 		db.getAll('links').then(ls => {
 			log(`export ${ls.length} links`)
-			json(JSON.stringify(ls), name)
+			downloadJsonString(JSON.stringify(ls), `${name}.json`); // TODO 
 		}).catch(log)
 	}
 
@@ -271,4 +280,45 @@
 		document.body.append(b, bTags, bSrc);
 	});
 	opener?.postMessage('ready', '*');
+
+	//
+	async function migrate(olds, addTags) {
+		if (!Array.isArray(addTags) || !addTags.length || addTags.some(t => !t)) {
+			throw 'addTags must be array'
+		}
+		if (typeof olds == 'string') olds = JSON.parse(olds)
+		if (!olds) return;
+		const count = { all: olds.length, add: 0, upTags: 0, upPrev: 0 }
+		for (const o of olds) {
+			const link = await db.get('links', o.url)
+			if (!link) {
+				if (o.title) {
+					o.name = o.title
+					delete o.title
+				}
+				await db.add('links', { ...o, tags: addTags })
+				count.add++
+				continue
+			}
+			if (addTags.some(t => !link.tags.includes(t))) {
+				const tags = [...new Set([...link.tags, ...addTags])]
+				await db.update('links', o.url, { tags })
+				count.upTags++
+			}
+			if (!o.prev || link.prev == o.prev) continue;
+			if (!link.prev) {
+				await db.update('links', o.url, { prev: o.prev })
+				count.upPrev++
+			}
+			log(
+				html.a({ href: link.url }, 'link'),
+				'.',
+				html.a({ href: link.prev }, 'prev'),
+				' conflict ',
+				' ',
+				html.a({ href: o.prev }, 'old.prev')
+			)
+		}
+		log('migrate done ' + Object.entries(count).map(p => p.join(' ')))
+	}
 </script>
