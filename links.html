@@ -33,6 +33,11 @@
 			font-size: calc(1rem / var(--repeat));
 		}
 
+		.tags {
+			bottom: 0;
+			right: 0;
+		}
+
 		a>img {
 			width: 100%;
 			aspect-ratio: 16 / 9;
@@ -44,6 +49,10 @@
 
 		a.next.gap {
 			border-style: dashed;
+		}
+
+		a.select {
+			border: 1px solid blue;
 		}
 
 		#tool {
@@ -78,11 +87,12 @@
 // top()
 // last()
 // view()
-// pull(localStorage.getItem('tempItems'), ['tmp'])
+// pull(localStorage.getItem('tempItems'), [])
+// download()
 	</textarea>
-	<button id="export">export</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<label><input type="checkbox" id="prev">prev</label>
+	<label><input type="checkbox" id="select">select</label>
 	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
 </div>
@@ -97,12 +107,21 @@
 		document.body.append(html.p(null, ...t)); // TODO [x]
 	}
 
+	function subtractSet(set, subs) {
+		const ss = new Set(set)
+		for (const s of subs) ss.delete(s)
+		return ss
+	}
+
 	const $ = selector => document.querySelector(selector);
 	const $$ = selector => document.querySelectorAll(selector);
 	const card = i => html.a(
 		{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
 		html.p(i.name || i.title),
-		html.img({ src: i.src, loading: 'lazy' })
+		html.img({ src: i.src, loading: 'lazy' }),
+		html.p({ class: 'tags' }, [
+			...subtractSet(i.tags, [...$tagsInc.selectedOptions].map(o => o.value))
+		].toString())
 	);
 	const $cards = $('#cards'), $tagsInc = $('#tagsInc')
 	const top = () => $cards.scrollIntoView();
@@ -154,19 +173,8 @@
 				if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
 			}
 		}
-		for (const i of prevMods(sort(links))) {
-			$cards.append(card(i));
-		}
+		$cards.append(...prevMods(sort(links)).map(card));
 	})().catch(log)
-	$('#export').onclick = () => {
-		const d = new Date().toLocaleDateString('eu').split('.').reverse().join('_')
-		const name = prompt('{name}.json', 'links_' + d.slice(2))
-		if (!name) return;
-		db.getAll('links').then(ls => {
-			log(`export ${ls.length} links`)
-			downloadJsonString(JSON.stringify(ls), `${name}.json`); // TODO 
-		}).catch(log)
-	}
 
 	const $perRow = $('#perRow');
 	$perRow.onchange = e => {
@@ -180,6 +188,11 @@
 	$perRow.value = localStorage.getItem('links-columns') || '';
 	$perRow.onchange();
 
+	const $select = $('#select')
+	$select.onchange = () => {
+		if (!$select.checked) $$('.select')
+			.forEach(e => e.classList.remove('select'))
+	}
 	const $prev = $('#prev')
 	let beNext
 	$prev.onchange = () => {
@@ -188,9 +201,10 @@
 		beNext = null
 	}
 	document.body.addEventListener('click', e => {
-		if (!$prev.checked || 'A' != e.target.parentElement.tagName) return;
+		const a = e.target?.parentElement
+		if ('A' != a?.tagName || !($prev.checked || $select.checked)) return;
 		e.preventDefault()
-		const a = e.target.parentElement
+		if ($select.checked) return a.classList.toggle('select')
 		if (beNext) {
 			const next = beNext
 			beNext.style.border = ''
@@ -276,6 +290,7 @@
 			document.body.append(b);
 			return
 		}
+		$cards.append(card(i))
 		log(`already in ${i.tags}`);
 		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
 		const b = html.button(async () => {
@@ -303,7 +318,15 @@
 	});
 	opener?.postMessage('ready', '*');
 
-	//
+	async function download() {
+		const d = new Date().toISOString().slice(2, 10)
+		const name = prompt('{name}.json', 'links_' + d)
+		if (!name) return;
+		const ls = await db.getAll('links')
+		log(`export ${ls.length} links`)
+		downloadJsonString(JSON.stringify(ls), `${name}.json`); // TODO 
+	}
+
 	async function pull(olds, addTags = []) {
 		if (!Array.isArray(addTags)) addTags = []
 		addTags.filter(Boolean)
