@@ -21,8 +21,12 @@
 			grid-column: 1/-1;
 		}
 
-		a {
+		a, #cards>img {
 			position: relative;
+		}
+
+		#cards>img {
+			max-width: 100%;
 		}
 
 		a>p {
@@ -256,7 +260,9 @@
 	}
 
 	addEventListener('message', async e => {
-		log(`message ${e.data?.url || e.data}`)
+		if (!e. data) return;
+		log(`message ${e.data.url || e.data}`)
+		$cards.append(...e.data.srcs?.map(src => html.img({ src })) || [])
 		document.body.append(html.input({
 			placeholder: 'new tags',
 			onchange(e) {
@@ -279,7 +285,7 @@
 		const { url, src, name, title } = e.data
 		const i = await db.get('links', url)
 		if (!i) {
-			$cards.append(card(e.data))
+			$cards.prepend(card(e.data))
 			const b = html.button(async () => {
 				const tags = [...$tagsInc.selectedOptions].map(o => o.value)
 				if (!tags.length) return log('select least one tag')
