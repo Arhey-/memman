@@ -87,6 +87,7 @@
 // top()
 // last()
 // view()
+// duplicates()
 // pull(localStorage.getItem('tempItems'), [])
 // download()
 	</textarea>
@@ -325,6 +326,18 @@
 		const ls = await db.getAll('links')
 		log(`export ${ls.length} links`)
 		downloadJsonString(JSON.stringify(ls), `${name}.json`); // TODO 
+	}
+
+	async function duplicates() {
+		const all = await db.getAll('links')
+		const ds = all.filter(l => l.url.includes('?'))
+		ds.forEach(l => {
+			const url = l.url.slice(0, l.url.indexOf('?'))
+			const o = all.find(l => l.url.startsWith(url))
+			if (o) ds.push(o)
+		})
+		$cards.innerHTML = ''
+		$cards.append(...ds.sort().map(card));
 	}
 
 	async function pull(olds, addTags = []) {
