@@ -21,7 +21,8 @@
 			grid-column: 1/-1;
 		}
 
-		a, #cards>img {
+		a,
+		#cards>img {
 			position: relative;
 		}
 
@@ -74,6 +75,10 @@
 			background-color: #385539;
 		}
 
+		#tagsEx {
+			background-color: #5b0f0f;
+		}
+
 		textarea {
 			grid-column: 1/-1;
 		}
@@ -86,30 +91,32 @@
 
 <div id="cards"></div>
 <div id="tool">
-	<textarea placeholder="eval">
+	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
-// top()
-// last()
-// view()
 // duplicates()
 // pull(localStorage.getItem('tempItems'), [])
 // download()
-	</textarea>
+</textarea>
+	<button id="code">code</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
+	<button id="top">top</button>
+	<button id="down">down</button>
+	<button id="view">view</button>
 	<label><input type="checkbox" id="prev">prev</label>
 	<label><input type="checkbox" id="select">select</label>
+	<select id="tagsEx" multiple></select>
 	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
 </div>
 
 <script type="module">
-	import { downloadJsonString } from './download.js';
-	import { html } from '../lib/html.js';
-	import { DB } from '../lib/db.js';
+	import { downloadJsonString } from './download.js'
+	import { html } from '../lib/html.js'
+	import { DB } from '../lib/db.js'
 
-	addEventListener('error', e => log(e.message));
+	addEventListener('error', e => log(e.message))
 	function log(...t) {
-		document.body.append(html.p(null, ...t)); // TODO [x]
+		document.body.append(html.p(null, ...t)) // TODO [x]
 	}
 
 	function subtractSet(set, subs) {
@@ -118,8 +125,9 @@
 		return ss
 	}
 
-	const $ = selector => document.querySelector(selector);
-	const $$ = selector => document.querySelectorAll(selector);
+	const $ = selector => document.querySelector(selector)
+	const $$ = selector => document.querySelectorAll(selector)
+
 	const card = i => html.a(
 		{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
 		html.p(i.name || i.title),
@@ -127,18 +135,11 @@
 		html.p({ class: 'tags' }, [
 			...subtractSet(i.tags, [...$tagsInc.selectedOptions].map(o => o.value))
 		].toString())
-	);
-	const $cards = $('#cards'), $tagsInc = $('#tagsInc')
-	const top = () => $cards.scrollIntoView();
-	const last = () => $cards.lastElementChild.scrollIntoView();
-	function view(urlPart) {
-		if (!urlPart) prompt('part of url')
-		if (urlPart) [...document.querySelectorAll('a')]
-			.find(a => a.href.includes(urlPart))
-			?.scrollIntoView()
-	}
+	)
 
+	const $cards = $('#cards'), $tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
 	const $textarea = $('textarea')
+	$('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 	$textarea.onchange = () => {
 		// add in-string check?
 		const s = $textarea.value.replace(/ ([A-Z])/g, '$1')
@@ -150,24 +151,29 @@
 
 	const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 		if (e.oldVersion == 0 && e.newVersion == 1) {
-			const db = event.target.result;
-			const s = db.createObjectStore('links', { keyPath: 'url' });
-			// s.createIndex('tags', 'tags', { unique: false }); // multi
+			const db = event.target.result
+			const s = db.createObjectStore('links', { keyPath: 'url' })
+			// s.createIndex('tags', 'tags', { unique: false }) // multi
 		} else {
 			throw Error(`todo uprade db from v${e.oldVersion} to ${e.newVersion}`)
 		}
 	})
 	await db.ready
 
-	localStorage.getItem('links-tags')
-		?.split(',')
-		.forEach(t => $tagsInc.append(html.option({ value: t }, t)))
+	localStorage.getItem('links-tags')?.split(',').forEach(t => {
+		$tagsInc.append(html.option({ value: t }, t))
+		$tagsEx.append(html.option({ value: t }, t))
+	})
 	$('#show').onclick = () => (async () => {
 		$cards.innerHTML = ''
 		const inc = [...$tagsInc.selectedOptions].map(o => o.value)
+		const ex = [...$tagsEx.selectedOptions].map(o => o.value)
 		const links = [], allTags = new Set
 		await db.each('links', l => {
-			if (inc.every(t => l.tags.includes(t))) links.push(l) //TODO search
+			if (
+				inc.every(t => l.tags.includes(t))
+				&& !ex.some(t => l.tags.includes(t))
+			) links.push(l) //TODO search
 			l.tags.forEach(t => allTags.add(t))
 		})
 		const s = [...allTags].sort().toString()
@@ -178,20 +184,29 @@
 				if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
 			}
 		}
-		$cards.append(...prevMods(sort(links)).map(card));
+		$cards.append(...prevMods(sort(links)).map(card))
 	})().catch(log)
 
-	const $perRow = $('#perRow');
+	$('#top').onclick = () => $cards.scrollIntoView()
+	$('#down').onclick = () => $cards.lastElementChild.scrollIntoView()
+	$('#view').onclick = () => view()
+	function view(urlPart = prompt('part of url')) {
+		if (urlPart) [...document.querySelectorAll('a')]
+			.find(a => a.href.includes(urlPart))
+			?.scrollIntoView()
+	}
+
+	const $perRow = $('#perRow')
 	$perRow.onchange = e => {
-		const v = $perRow.value;
-		document.documentElement.style.setProperty('--repeat', v || 'auto-fit');
+		const v = $perRow.value
+		document.documentElement.style.setProperty('--repeat', v || 'auto-fit')
 		$cards.style['grid-template-columns'] = v
 			? 'repeat(var(--repeat), 1fr)'
-			: '';
-		if (e) localStorage.setItem('links-columns', v);
-	};
-	$perRow.value = localStorage.getItem('links-columns') || '';
-	$perRow.onchange();
+			: ''
+		if (e) localStorage.setItem('links-columns', v)
+	}
+	$perRow.value = localStorage.getItem('links-columns') || ''
+	$perRow.onchange()
 
 	const $select = $('#select')
 	$select.onchange = () => {
@@ -260,8 +275,10 @@
 	}
 
 	addEventListener('message', async e => {
-		if (!e. data) return;
-		log(`message ${e.data.url || e.data}`)
+		if (!e.data) return;
+		const { url, src, name, title } = e.data
+		if (url) log(`message`, url.split('/'));
+		else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(src => html.img({ src })) || [])
 		document.body.append(html.input({
 			placeholder: 'new tags',
@@ -273,16 +290,15 @@
 					.filter(Boolean)
 				if (!tags.length) return;
 				const was = [...$tagsInc.options].map(o => o.value)
-				for (const t of tags) {
-					if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
+				for (const t of tags) if (!was.includes(t)) {
+					$tagsInc.append(html.option({ selected: true, value: t }, t))
 				}
 				const s = [...new Set([...was, ...tags])].sort().toString()
 				if (s != localStorage.getItem('links-tags')) {
 					localStorage.setItem('links-tags', s)
 				}
 			}
-		}));
-		const { url, src, name, title } = e.data
+		}))
 		const i = await db.get('links', url)
 		if (!i) {
 			$cards.prepend(card(e.data))
@@ -292,19 +308,20 @@
 				b.remove()
 				const link = { url, src, name: name || title, tags }
 				await db.add('links', link)
-				log('saved\n' + url)
-			}, 'add');
-			document.body.append(b);
+				log('added to ' + tags)
+			}, 'add')
+			document.body.append(b)
 			return
 		}
 		$cards.append(card(i))
 		log(`already in ${i.tags}`);
 		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
 		const b = html.button(async () => {
+			if (!confirm('remove?')) return;
 			b.remove()
 			await db.delete('links', url)
 			log(`"${name || title}" removed\n${url}`)
-		}, 'remove?')
+		}, 'remove')
 		const bSrc = html.button(async () => {
 			bSrc.remove()
 			await db.update('links', url, { src })
@@ -319,11 +336,11 @@
 			await db.update('links', url, { tags })
 			i.tags = tags
 			bTags.disabled = false
-			log('tags updated')
+			log('tags updated to ' + tags)
 		}, 'update tags')
-		document.body.append(b, bTags, bSrc);
-	});
-	opener?.postMessage('ready', '*');
+		document.body.append(b, bTags, bSrc)
+	})
+	opener?.postMessage('ready', '*')
 
 	async function download() {
 		const d = new Date().toISOString().slice(2, 10)
@@ -331,7 +348,7 @@
 		if (!name) return;
 		const ls = await db.getAll('links')
 		log(`export ${ls.length} links`)
-		downloadJsonString(JSON.stringify(ls), `${name}.json`); // TODO 
+		downloadJsonString(JSON.stringify(ls), `${name}.json`) // TODO 
 	}
 
 	async function duplicates() {
@@ -343,7 +360,7 @@
 			if (o) ds.push(o)
 		})
 		$cards.innerHTML = ''
-		$cards.append(...ds.sort().map(card));
+		$cards.append(...ds.sort().map(card))
 	}
 
 	async function pull(olds, addTags = []) {
