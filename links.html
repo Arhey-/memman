@@ -93,6 +93,7 @@
 <div id="tool">
 	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
+// updateTags('','') // add,rm
 // duplicates()
 // pull(localStorage.getItem('tempItems'), [])
 // download()
@@ -283,11 +284,7 @@
 		document.body.append(html.input({
 			placeholder: 'new tags',
 			onchange(e) {
-				const tags = e.target.value
-					.split(' ')
-					.flatMap(s => s.split(','))
-					.map(s => s.trim())
-					.filter(Boolean)
+				const tags = stringToTags(e.target.value)
 				if (!tags.length) return;
 				const was = [...$tagsInc.options].map(o => o.value)
 				for (const t of tags) if (!was.includes(t)) {
@@ -349,6 +346,26 @@
 		const ls = await db.getAll('links')
 		log(`export ${ls.length} links`)
 		downloadJsonString(JSON.stringify(ls), `${name}.json`) // TODO 
+	}
+
+	const stringToTags = s => s
+		.split(' ')
+		.flatMap(s => s.split(','))
+		.map(s => s.trim())
+		.filter(Boolean)
+
+	async function updateTags(add = '', rm = '') {
+		add = stringToTags(add)
+		rm = stringToTags(rm)
+		const { eqSet } = await import('../lib/diff.js')
+		for (const url of [...$$('a.select')].map(a => a.href)) {
+			const l = await db.get('links', url)
+			if (!l) continue;
+			const tags = [...subtractSet(new Set([...l.tags, ...add]), rm)]
+			if (eqSet(tags, l.tags)) continue;
+			await db.update('links', url, { tags })
+			log(url, `${l.tags} to ${tags}`)
+		}
 	}
 
 	async function duplicates() {
