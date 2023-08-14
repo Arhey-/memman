@@ -12,6 +12,10 @@
 			margin: 0;
 		}
 
+		p {
+			word-wrap: break-word;
+		}
+
 		#cards {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -278,7 +282,7 @@
 	addEventListener('message', async e => {
 		if (!e.data) return;
 		const { url, src, name, title } = e.data
-		if (url) log(`message`, url.split('/'));
+		if (url) log('message ', url.split('/').map(s=>'/'+s).slice(1));
 		else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(src => html.img({ src })) || [])
 		document.body.append(html.input({
