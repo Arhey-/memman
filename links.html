@@ -281,10 +281,11 @@
 
 	addEventListener('message', async e => {
 		if (!e.data) return;
-		const { url, src, name, title } = e.data
+		const { url, name, title } = e.data
+		let { src } = e.data
 		if (url) log('message ', url.split('/').map(s => '/' + s).slice(1));
 		else log(`message ${e.data}`);
-		$cards.append(...e.data.srcs?.map(src => html.img({ src })) || [])
+		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
 		document.body.append(html.input({
 			placeholder: 'new tags',
 			onchange(e) {
