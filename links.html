@@ -98,7 +98,7 @@
 	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
 // updateTags('','') // add,rm
-// duplicates()
+// duplicates('exclude')
 // pull(localStorage.getItem('tempItems'), [])
 // download()
 </textarea>
@@ -282,7 +282,7 @@
 	addEventListener('message', async e => {
 		if (!e.data) return;
 		const { url, src, name, title } = e.data
-		if (url) log('message ', url.split('/').map(s=>'/'+s).slice(1));
+		if (url) log('message ', url.split('/').map(s => '/' + s).slice(1));
 		else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(src => html.img({ src })) || [])
 		document.body.append(html.input({
@@ -372,9 +372,9 @@
 		}
 	}
 
-	async function duplicates() {
+	async function duplicates(exclude) {
 		const all = await db.getAll('links')
-		const ds = all.filter(l => l.url.includes('?'))
+		const ds = all.filter(l => l.url.includes('?') && (!exclude || !l.url.includes(exclude)))
 		ds.forEach(l => {
 			const url = l.url.slice(0, l.url.indexOf('?'))
 			const o = all.find(l => l.url.startsWith(url))
