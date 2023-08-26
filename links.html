@@ -98,7 +98,7 @@
 	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
 // updateTags('','') // add,rm
-// duplicates('exclude')
+// duplicates('inc','exclude')
 // pull(localStorage.getItem('tempItems'), [])
 // download()
 </textarea>
@@ -373,9 +373,11 @@
 		}
 	}
 
-	async function duplicates(exclude) {
+	async function duplicates(inc, exclude) {
 		const all = await db.getAll('links')
-		const ds = all.filter(l => l.url.includes('?') && (!exclude || !l.url.includes(exclude)))
+		const ds = all.filter(l => l.url.includes('?')
+			&& (!inc || l.url.includes(inc))
+			&& (!exclude || !l.url.includes(exclude)))
 		ds.forEach(l => {
 			const url = l.url.slice(0, l.url.indexOf('?'))
 			const o = all.find(l => l.url.startsWith(url))
