@@ -380,11 +380,12 @@
 			&& (!exclude || !l.url.includes(exclude)))
 		ds.forEach(l => {
 			const url = l.url.slice(0, l.url.indexOf('?'))
-			const o = all.find(l => l.url.startsWith(url))
+			const o = all.find(ll => ll.url != l.url && ll.url.startsWith(url))
 			if (o) ds.push(o)
 		})
+		ds.sort(({url:a},{url:b})=>a>b?1:a<b?-1:0)
 		$cards.innerHTML = ''
-		$cards.append(...ds.sort().map(card))
+		$cards.append(...ds.map(card))
 	}
 
 	async function pull(olds, addTags = []) {
