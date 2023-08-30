@@ -98,7 +98,8 @@
 	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
 // updateTags('','') // add,rm
-// duplicates('inc','exclude')
+// duplicates('ga=','exclude')
+// [...$$('a.select')].forEach(a => log(a.href))
 // pull(localStorage.getItem('tempItems'), [])
 // download()
 </textarea>
@@ -281,10 +282,14 @@
 
 	addEventListener('message', async e => {
 		if (!e.data) return;
-		const { url, name, title } = e.data
-		let { src } = e.data
-		if (url) log('message ', url.split('/').map(s => '/' + s).slice(1));
-		else log(`message ${e.data}`);
+		const { name, title } = e.data
+		let { url, src } = e.data
+		if (url) {
+			const u = new URL(url)
+			u.searchParams.delete('_ga')
+			url = u.href
+			log('message ', url.split('/').map((s, i) => i ? '/' + s : s))
+		} else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
 		document.body.append(html.input({
 			placeholder: 'new tags',
@@ -302,6 +307,8 @@
 			}
 		}))
 		const i = await db.get('links', url)
+		const si = url.indexOf('?')
+		if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
 		if (!i) {
 			$cards.prepend(card(e.data))
 			const b = html.button(async () => {
@@ -315,7 +322,7 @@
 			document.body.append(b)
 			return
 		}
-		$cards.append(card(i))
+		$cards.prepend(card(i))
 		log(`already in ${i.tags}`);
 		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
 		const b = html.button(async () => {
@@ -383,7 +390,7 @@
 			const o = all.find(ll => ll.url != l.url && ll.url.startsWith(url))
 			if (o) ds.push(o)
 		})
-		ds.sort(({url:a},{url:b})=>a>b?1:a<b?-1:0)
+		ds.sort(({ url: a }, { url: b }) => a > b ? 1 : a < b ? -1 : 0)
 		$cards.innerHTML = ''
 		$cards.append(...ds.map(card))
 	}
