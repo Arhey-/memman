@@ -43,7 +43,7 @@
 	</script>
 
 	<script type="module">
-		import { downloadJsonString } from './download.js'
+		import { saveJson } from './fs.js'
 
 		const $has = document.getElementById('has')
 		const $notHas = document.getElementById('notHas')
@@ -58,8 +58,7 @@
 			for (const k of filteredKeys()) {
 				o[k] = getItem(k)
 			}
-			const j = JSON.stringify(o)
-			downloadJsonString(j, location.host + '.json')
+			saveJson(o, location.host)
 		}
 
 		function getItem(key) {

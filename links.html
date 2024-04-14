@@ -101,6 +101,7 @@
 // duplicates('ga=','exclude')
 // [...$$('a.select')].forEach(a => log(a.href))
 // pull(localStorage.getItem('tempItems'), [])
+// upload()
 // download()
 </textarea>
 	<button id="code">code</button>
@@ -116,7 +117,7 @@
 </div>
 
 <script type="module">
-	import { downloadJsonString } from './download.js'
+	import { saveJson, readJson } from './fs.js'
 	import { html } from '../lib/html.js'
 	import { DB } from '../lib/db.js'
 
@@ -357,7 +358,18 @@
 		if (!name) return;
 		const ls = await db.getAll('links')
 		log(`export ${ls.length} links`)
-		downloadJsonString(JSON.stringify(ls), `${name}.json`) // TODO 
+		saveJson(ls, name) // TODO 
+	}
+
+	async function upload() {
+		const ls = await readJson()
+		log(`import ${ls.length} links`)
+		const progress = html.progress({ max: ls.length, value: 0 })
+		document.body.append(progress)
+		for (const link of ls) {
+			await db.add('links', link)
+			progress.value += 1
+		}
 	}
 
 	const stringToTags = s => s
