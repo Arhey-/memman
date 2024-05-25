@@ -307,11 +307,14 @@
 		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
 
 		// TODO onchange $tagsInc -> $tags
-		const $tags = html.fieldset(null, html.legend(null, 'tags'))
+		const $tags = html.fieldset(html.legend('tags'))
 		const onchange = e => [...$tagsInc.options]
 			.find(o => o.value == e.target.value)
 			.selected = e.target.checked
-		const makeTagCheckBox = t => html.label(null, html.input({ value: t, onchange }), t)
+		const makeTagCheckBox = t => html.label(
+			html.input({ type: 'checkbox', value: t, onchange }),
+			t
+		)
 
 		document.body.append(html.input({
 			placeholder: 'new tags (,|\\s separated)',
