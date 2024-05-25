@@ -305,6 +305,14 @@
 			log('message ', url.split('/').map((s, i) => i ? '/' + s : s))
 		} else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
+
+		// TODO onchange $tagsInc -> $tags
+		const $tags = html.fieldset(null, html.legend(null, 'tags'))
+		const onchange = e => [...$tagsInc.options]
+			.find(o => o.value == e.target.value)
+			.selected = e.target.checked
+		const makeTagCheckBox = t => html.label(null, html.input({ value: t, onchange }), t)
+
 		document.body.append(html.input({
 			placeholder: 'new tags (,|\\s separated)',
 			onchange(e) {
@@ -313,6 +321,7 @@
 				const was = [...$tagsInc.options].map(o => o.value)
 				for (const t of tags) if (!was.includes(t)) {
 					$tagsInc.append(html.option({ selected: true, value: t }, t))
+					$tags.append(makeTagCheckBox(t))
 				}
 				const s = [...new Set([...was, ...tags])].sort().toString()
 				if (s != localStorage.getItem('links-tags')) {
@@ -323,15 +332,6 @@
 		const i = await db.get('links', url)
 		const si = url.indexOf('?')
 		if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
-		const bSameName = html.button(async () => {
-			bSameName.remove()
-			const ls = await db.getAll('links')
-			const n = name || title
-			const sn = ls.filter(l => l.name == n)
-			if (sn.length) $cards.append(...sn.map(card));
-			else log('not found same name')
-		}, 'search same name')
-		document.body.append(bSameName)
 		if (!i) {
 			$cards.prepend(card(e.data))
 			const b = html.button(async () => {
@@ -340,9 +340,18 @@
 				b.remove()
 				const link = { url, src, name: name || title, tags }
 				await db.add('links', link)
-				log('added to ' + tags)
+				close()
 			}, 'add')
-			document.body.append(b)
+			const bSameName = html.button(async () => {
+				bSameName.remove()
+				const ls = await db.getAll('links')
+				const n = name || title
+				const sn = ls.filter(l => l.name == n)
+				if (sn.length) $cards.append(...sn.map(card));
+				else log('not found same name')
+			}, 'search same name')
+			$tags.append(...[...$tagsInc.options].map(o => makeTagCheckBox(o.value)))
+			document.body.append($tags, b, bSameName)
 			return
 		}
 		$cards.prepend(card(i))
