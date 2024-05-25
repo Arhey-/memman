@@ -179,8 +179,10 @@
 		const isLoad = inc.length || ex.length || urlPart.length || confirm(
 			'no tags selected.\nYES - show all, CANCEL - reindex tags'
 		)
-		const links = [], allTags = new Set, total = 0
+		const links = [], allTags = new Set
+		let total = 0
 		await db.each('links', l => {
+			total++
 			if (
 				isLoad
 				&& inc.every(t => l.tags.includes(t))
