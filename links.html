@@ -131,6 +131,9 @@
 	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
 </div>
+<fieldset id="tags">
+	<legend>tags</legend>
+</fieldset>
 
 <script type="module">
 	import { saveJson, readJson } from './fs.js'
@@ -160,7 +163,8 @@
 		].toString())
 	)
 
-	const $cards = $('#cards'), $tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
+	const $cards = $('#cards'), $tags = $('#tags'),
+		$tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
 	const $textarea = $('textarea')
 	$('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 	$textarea.onchange = () => {
@@ -183,10 +187,20 @@
 	})
 	await db.ready
 
+	// TODO onchange $tagsInc -> $tags
+	const tagOnChange = e => [...$tagsInc.options]
+		.find(o => o.value == e.target.value)
+		.selected = e.target.checked
+	const makeTagCheckBox = t => html.label(
+		html.input({ type: 'checkbox', value: t, onchange: tagOnChange }),
+		t
+	)
 	localStorage.getItem('links-tags')?.split(',').forEach(t => {
 		$tagsInc.append(html.option({ value: t }, t))
 		$tagsEx.append(html.option({ value: t }, t))
+		$tags.append(makeTagCheckBox(t))
 	})
+
 	$('#show').onclick = () => show().catch(log)
 	async function show(urlPart = '') {
 		$cards.innerHTML = ''
@@ -318,19 +332,9 @@
 			const u = new URL(url)
 			u.searchParams.delete('_ga')
 			url = u.href
-			log('message ', url.split('/').map((s, i) => i ? '/' + s : s))
+			log(url.split('/').map((s, i) => i ? '/' + s : s))
 		} else log(`message ${e.data}`);
 		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
-
-		// TODO onchange $tagsInc -> $tags
-		const $tags = html.fieldset({ id: 'tags' }, html.legend('tags'))
-		const onchange = e => [...$tagsInc.options]
-			.find(o => o.value == e.target.value)
-			.selected = e.target.checked
-		const makeTagCheckBox = t => html.label(
-			html.input({ type: 'checkbox', value: t, onchange }),
-			t
-		)
 
 		document.body.append(html.input({
 			placeholder: 'new tags (,|\\s separated)',
@@ -369,12 +373,12 @@
 				if (sn.length) $cards.append(...sn.map(card));
 				else log('not found same name')
 			}, 'search same name')
-			$tags.append(...[...$tagsInc.options].map(o => makeTagCheckBox(o.value)))
 			document.body.append($tags, b, bSameName)
 			return
 		}
 		$cards.prepend(card(i));
-		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
+		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value));
+		[...$tags.elements].forEach(cb => cb.checked = i.tags.includes(cb.value))
 		const b = html.button(async () => {
 			if (!confirm('remove?')) return;
 			b.remove()
