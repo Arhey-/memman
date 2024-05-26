@@ -67,6 +67,7 @@
 		#tool {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+			gap: 1px;
 			position: sticky;
 			bottom: 0;
 		}
@@ -89,6 +90,21 @@
 
 		textarea:focus {
 			height: 12em;
+		}
+
+		#tags {
+			label {
+				padding: 0 0.2rem;
+				display: inline-block;
+			}
+
+			label>input[type=checkbox] {
+				display: none;
+			}
+
+			label:has(:checked) {
+				color: darkseagreen;
+			}
 		}
 	</style>
 </head>
@@ -307,7 +323,7 @@
 		$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
 
 		// TODO onchange $tagsInc -> $tags
-		const $tags = html.fieldset(html.legend('tags'))
+		const $tags = html.fieldset({ id: 'tags' }, html.legend('tags'))
 		const onchange = e => [...$tagsInc.options]
 			.find(o => o.value == e.target.value)
 			.selected = e.target.checked
@@ -348,8 +364,8 @@
 			const bSameName = html.button(async () => {
 				bSameName.remove()
 				const ls = await db.getAll('links')
-				const n = name || title
-				const sn = ls.filter(l => l.name == n)
+				const n = (name || title).toLowerCase()
+				const sn = ls.filter(l => l.name.toLowerCase() == n)
 				if (sn.length) $cards.append(...sn.map(card));
 				else log('not found same name')
 			}, 'search same name')
@@ -357,8 +373,7 @@
 			document.body.append($tags, b, bSameName)
 			return
 		}
-		$cards.prepend(card(i))
-		log(`already in ${i.tags}`);
+		$cards.prepend(card(i));
 		[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value))
 		const b = html.button(async () => {
 			if (!confirm('remove?')) return;
