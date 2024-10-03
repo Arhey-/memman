@@ -141,6 +141,7 @@
 	import { DB } from '../lib/db.js'
 
 	addEventListener('error', e => log(e.message))
+	addEventListener('unhandledrejection', e => log('reject', e.reason))
 	function log(...t) {
 		document.body.append(html.p(null, ...t)) // TODO [x]
 	}
@@ -370,8 +371,18 @@
 				const ls = await db.getAll('links')
 				const n = (name || title).toLowerCase()
 				const sn = ls.filter(l => l.name.toLowerCase() == n)
-				if (sn.length) $cards.append(...sn.map(card));
-				else log('not found same name')
+				if (!sn.length) {
+					log('not found same name')
+					return
+				}
+				$cards.append(...sn.map(card));
+
+				const b = html.button(async () => {
+					b.remove()
+					await db.add('links', { ...sn[0], url, src })
+					await db.delete('links', sn[0].url)
+					close()
+				}, 'replace url and src in first same name')
 			}, 'search same name')
 			document.body.append($tags, b, bSameName)
 			return
