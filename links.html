@@ -383,6 +383,7 @@
 					await db.delete('links', sn[0].url)
 					close()
 				}, 'replace url and src in first same name')
+				document.body.append(b)
 			}, 'search same name')
 			document.body.append($tags, b, bSameName)
 			return
