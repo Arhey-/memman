@@ -32,7 +32,7 @@ const $textarea = $('textarea')
 $('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 $textarea.onchange = () => {
 	// add in-string check?
-	const s = $textarea.value.replace(/ ([A-Z])/g, '$1')
+	const s = $textarea.value.replace(/ ([A-Z])/g, '$1') // FIXME "new Map"
 	if (!s || s.startsWith('prevent eval')) return;
 	const r = eval(s)
 	if (r instanceof Promise) r.then(log).catch(log);
@@ -41,7 +41,7 @@ $textarea.onchange = () => {
 
 const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 	if (e.oldVersion == 0 && e.newVersion == 1) {
-		const db = event.target.result
+		const db = e.target.result
 		const s = db.createObjectStore('links', { keyPath: 'url' })
 		// s.createIndex('tags', 'tags', { unique: false }) // multi
 	} else {
@@ -50,19 +50,47 @@ const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 })
 await db.ready
 
+localStorage.getItem('links-tags')?.split(',').forEach(addTagToUI)
+const tagsSort = stringToTags(localStorage.getItem('links-tags-sort') || '')
+
+function tagSortedIndex({ tag, originalIndex }) {
+	const i = tagsSort.indexOf(tag)
+	return i === -1 ? tagsSort.length + originalIndex : i
+}
+
+function saveTags(all) {
+	const s = [...all]
+		.map((tag, i) => ({ tag, originalIndex: i }))
+		.sort((a, b) => tagSortedIndex(a) - tagSortedIndex(b))
+		.map(t => t.tag)
+		.toString()
+	if (localStorage.getItem('links-tags') != s) {
+		localStorage.setItem('links-tags', s)
+	}
+}
+
+function addTagsToUI(tags) {
+	const was = new Set(Array.from($tagsInc.options, o => o.value))
+	const added = new Set(tags).difference(was)
+	for (const t of added) {
+		addTagToUI(t)
+	}
+	return { was, added }
+}
+
+function addTagToUI(tag) {
+	$tagsInc.append(html.option({ value: tag }, tag))
+	$tagsEx.append(html.option({ value: tag }, tag))
+	const c = html.input({ type: 'checkbox', value: tag, onchange: tagOnChange })
+	$tags.append(html.label(c, tag))
+}
+
 // TODO onchange $tagsInc -> $tags
-const tagOnChange = e => [...$tagsInc.options]
-	.find(o => o.value == e.target.value)
-	.selected = e.target.checked
-const makeTagCheckBox = t => html.label(
-	html.input({ type: 'checkbox', value: t, onchange: tagOnChange }),
-	t
-)
-localStorage.getItem('links-tags')?.split(',').forEach(t => {
-	$tagsInc.append(html.option({ value: t }, t))
-	$tagsEx.append(html.option({ value: t }, t))
-	$tags.append(makeTagCheckBox(t))
-})
+function tagOnChange({ target: { value, checked } }) {
+	[...$tagsInc.options]
+		.find(o => o.value == value)
+		.selected = checked
+}
 
 $('#show').onclick = () => show().catch(log)
 async function show(urlPart = '') {
@@ -84,15 +112,10 @@ async function show(urlPart = '') {
 		) links.push(l)
 		l.tags.forEach(t => allTags.add(t))
 	})
-	const s = [...allTags].sort().toString()
-	if (s != localStorage.getItem('links-tags')) {
-		localStorage.setItem('links-tags', s)
-		const was = [...$tagsInc.options].map(o => o.value)
-		for (const t of allTags) {
-			if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
-		}
-		log('new tags found in db')
-	}
+	saveTags(allTags)
+	const { added } = addTagsToUI(allTags)
+	for (const t of added) log('new tags found in db: ', t)
+	
 	log(`total ${total}, show ${links.length}`)
 	$cards.append(...prevMods(sort(links)).map(card))
 }
@@ -154,28 +177,28 @@ document.body.addEventListener('click', e => {
 })
 
 function sort(list) {
-	let wait, s = [], label = `sort ${list.length} items`;
+	let wait, sorted = [], label = `sort ${list.length} items`;
 	console.time(label);
 	do {
 		if (wait) list = wait;
 		wait = [];
 		for (const i of list) {
 			if (!i.prev) {
-				s.push(i);
+				sorted.push(i);
 				continue;
 			}
-			const n = s.findIndex(si => si.url == i.prev);
+			const n = sorted.findIndex(si => si.url == i.prev);
 			if (n > -1) {
-				s.splice(n + 1, 0, i);
+				sorted.splice(n + 1, 0, i);
 			} else if (list.some(li => li.url == i.prev)) {
 				wait.push(i);
 			} else {
-				s.push(i);
+				sorted.push(i);
 			}
 		}
 	} while (wait.length);
 	console.timeEnd(label);
-	return s
+	return sorted
 }
 
 const prevGap = Symbol('prevGap')
@@ -203,16 +226,8 @@ addEventListener('message', async e => {
 		placeholder: 'new tags (,|\\s separated)',
 		onchange(e) {
 			const tags = stringToTags(e.target.value)
-			if (!tags.length) return;
-			const was = [...$tagsInc.options].map(o => o.value)
-			for (const t of tags) if (!was.includes(t)) {
-				$tagsInc.append(html.option({ selected: true, value: t }, t))
-				$tags.append(makeTagCheckBox(t))
-			}
-			const s = [...new Set([...was, ...tags])].sort().toString()
-			if (s != localStorage.getItem('links-tags')) {
-				localStorage.setItem('links-tags', s)
-			}
+			const { was, added } = addTagsToUI(tags)
+			saveTags(was.union(added))
 		}
 	}))
 	const i = await db.get('links', url)
@@ -311,7 +326,7 @@ async function updateTags(add = '', rm = '') {
 	for (const url of [...$$('a.select')].map(a => a.href)) {
 		const l = await db.get('links', url)
 		if (!l) continue;
-		const tags = [...subtractSet(new Set([...l.tags, ...add]), rm)]
+		const tags = [...subtractSet([...l.tags, ...add], rm)]
 		if (eqSet(tags, l.tags)) continue;
 		await db.update('links', url, { tags })
 		log(url, `${l.tags} to ${tags}`)
