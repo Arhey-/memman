@@ -117,6 +117,7 @@ async function show(urlPart = '') {
 	for (const t of added) log('new tags found in db: ', t)
 	
 	log(`total ${total}, show ${links.length}`)
+	await new Promise(r => setTimeout(r))
 	$cards.append(...prevMods(sort(links)).map(card))
 }
 
