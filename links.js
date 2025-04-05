@@ -315,6 +315,24 @@ async function upload() {
 	}
 }
 
+async function diffUpload() {
+	const ls = await readJson()
+	log(`remote ${ls.length} links`)
+	const remotes = new Map(ls.map(l => [l.url, l]))
+	let changed = 0, removed = 0
+	await db.each('links', local => {
+		const r = remotes.get(local.url)
+		if (r) {
+			// diff changes
+			// if(chanded) changed++;
+		} else {
+			removed++
+			$cards.append(card(local))
+		}
+	})
+	log('local-only', removed)
+}
+
 function stringToTags(s) {
 	return s
 		.split(/,|\s/)
