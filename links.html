@@ -17,8 +17,15 @@
 		}
 
 		#cards {
+			--card-max-width: 1fr;
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(320px, var(--card-max-width)));
+
+			@media (orientation: landscape) {
+				& {
+					--card-max-width: .5fr;
+				}
+			}
 		}
 
 		#cards>.div {
@@ -92,9 +99,13 @@
 			height: 12em;
 		}
 
+		body:not(:has(#cards > *)) #tool textarea {
+			height: 12em;
+		}
+
 		#tags {
 			label {
-				padding: 0 0.2rem;
+				padding: 0 0.25rem;
 				display: inline-block;
 			}
 
