@@ -1,0 +1,364 @@
+import { saveJson, readJson } from './fs.js'
+import { html } from '../lib/html.js'
+import { DB } from '../lib/db.js'
+
+addEventListener('error', e => log(e.message))
+addEventListener('unhandledrejection', e => log('reject', e.reason))
+function log(...t) {
+    document.body.append(html.p(null, ...t)) // TODO [x]
+}
+
+function subtractSet(set, subs) {
+    const ss = new Set(set)
+    for (const s of subs) ss.delete(s)
+    return ss
+}
+
+const $ = selector => document.querySelector(selector)
+const $$ = selector => document.querySelectorAll(selector)
+
+const card = i => html.a(
+    { href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
+    html.p(i.name || i.title),
+    html.img({ src: i.src, loading: 'lazy' }),
+    html.p({ class: 'tags' }, [
+        ...subtractSet(i.tags, [...$tagsInc.selectedOptions].map(o => o.value))
+    ].toString())
+)
+
+const $cards = $('#cards'), $tags = $('#tags'),
+    $tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
+const $textarea = $('textarea')
+$('#code').onclick = () => $textarea.hidden = !$textarea.hidden
+$textarea.onchange = () => {
+    // add in-string check?
+    const s = $textarea.value.replace(/ ([A-Z])/g, '$1')
+    if (!s || s.startsWith('prevent eval')) return;
+    const r = eval(s)
+    if (r instanceof Promise) r.then(log).catch(log);
+    else log(r);
+}
+
+const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
+    if (e.oldVersion == 0 && e.newVersion == 1) {
+        const db = event.target.result
+        const s = db.createObjectStore('links', { keyPath: 'url' })
+        // s.createIndex('tags', 'tags', { unique: false }) // multi
+    } else {
+        throw Error(`todo uprade db from v${e.oldVersion} to ${e.newVersion}`)
+    }
+})
+await db.ready
+
+// TODO onchange $tagsInc -> $tags
+const tagOnChange = e => [...$tagsInc.options]
+    .find(o => o.value == e.target.value)
+    .selected = e.target.checked
+const makeTagCheckBox = t => html.label(
+    html.input({ type: 'checkbox', value: t, onchange: tagOnChange }),
+    t
+)
+localStorage.getItem('links-tags')?.split(',').forEach(t => {
+    $tagsInc.append(html.option({ value: t }, t))
+    $tagsEx.append(html.option({ value: t }, t))
+    $tags.append(makeTagCheckBox(t))
+})
+
+$('#show').onclick = () => show().catch(log)
+async function show(urlPart = '') {
+    $cards.innerHTML = ''
+    const inc = [...$tagsInc.selectedOptions].map(o => o.value)
+    const ex = [...$tagsEx.selectedOptions].map(o => o.value)
+    const isLoad = inc.length || ex.length || urlPart.length || confirm(
+        'no tags selected.\nYES - show all, CANCEL - reindex tags'
+    )
+    const links = [], allTags = new Set
+    let total = 0
+    await db.each('links', l => {
+        total++
+        if (
+            isLoad
+            && inc.every(t => l.tags.includes(t))
+            && !ex.some(t => l.tags.includes(t))
+            && (!urlPart.length || l.url.includes(urlPart))
+        ) links.push(l)
+        l.tags.forEach(t => allTags.add(t))
+    })
+    const s = [...allTags].sort().toString()
+    if (s != localStorage.getItem('links-tags')) {
+        localStorage.setItem('links-tags', s)
+        const was = [...$tagsInc.options].map(o => o.value)
+        for (const t of allTags) {
+            if (!was.includes(t)) $tagsInc.append(html.option({ value: t }, t))
+        }
+        log('new tags found in db')
+    }
+    log(`total ${total}, show ${links.length}`)
+    $cards.append(...prevMods(sort(links)).map(card))
+}
+
+$('#top').onclick = () => $cards.scrollIntoView()
+$('#down').onclick = () => $cards.lastElementChild.scrollIntoView()
+$('#view').onclick = () => view()
+function view(urlPart = prompt('part of url')) {
+    if (!$cards.childElementCount) {
+        return show(urlPart).catch(log)
+    }
+    if (urlPart) [...document.querySelectorAll('a')]
+        .find(a => a.href.includes(urlPart))
+        ?.scrollIntoView()
+}
+
+const $perRow = $('#perRow')
+$perRow.onchange = e => {
+    const v = $perRow.value
+    document.documentElement.style.setProperty('--repeat', v || 'auto-fit')
+    $cards.style['grid-template-columns'] = v
+        ? 'repeat(var(--repeat), 1fr)'
+        : ''
+    if (e) localStorage.setItem('links-columns', v)
+}
+$perRow.value = localStorage.getItem('links-columns') || ''
+$perRow.onchange()
+
+const $select = $('#select')
+$select.onchange = () => {
+    if (!$select.checked) $$('.select')
+        .forEach(e => e.classList.remove('select'))
+}
+const $prev = $('#prev')
+let beNext
+$prev.onchange = () => {
+    if ($prev.checked || !beNext) return;
+    beNext.style.border = ''
+    beNext = null
+}
+document.body.addEventListener('click', e => {
+    const a = e.target?.parentElement
+    if ('A' != a?.tagName || !($prev.checked || $select.checked)) return;
+    e.preventDefault()
+    if ($select.checked) return a.classList.toggle('select')
+    if (beNext) {
+        const next = beNext
+        beNext.style.border = ''
+        beNext = null
+        if (a == next) return;
+        db.update('links', next.href, { prev: a.href }).then(() => {
+            a.after(next)
+            next.classList.add('next')
+        }).catch(log)
+    } else {
+        beNext = a
+        a.style.border = '1px solid blue'
+    }
+})
+
+function sort(list) {
+    let wait, s = [], label = `sort ${list.length} items`;
+    console.time(label);
+    do {
+        if (wait) list = wait;
+        wait = [];
+        for (const i of list) {
+            if (!i.prev) {
+                s.push(i);
+                continue;
+            }
+            const n = s.findIndex(si => si.url == i.prev);
+            if (n > -1) {
+                s.splice(n + 1, 0, i);
+            } else if (list.some(li => li.url == i.prev)) {
+                wait.push(i);
+            } else {
+                s.push(i);
+            }
+        }
+    } while (wait.length);
+    console.timeEnd(label);
+    return s
+}
+
+const prevGap = Symbol('prevGap')
+function prevMods(list) {
+    const urls = new Set(list.map(l => l.url))
+    list.forEach((l, i) => {
+        if (l.prev && l.prev != list[i - 1]?.url) l[prevGap] = true
+    })
+    return list
+}
+
+addEventListener('message', async e => {
+    if (!e.data) return;
+    const { name, title } = e.data
+    let { url, src } = e.data
+    if (url) {
+        const u = new URL(url)
+        u.searchParams.delete('_ga')
+        url = u.href
+        log(url.split('/').map((s, i) => i ? '/' + s : s))
+    } else log(`message ${e.data}`);
+    $cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
+
+    document.body.append(html.input({
+        placeholder: 'new tags (,|\\s separated)',
+        onchange(e) {
+            const tags = stringToTags(e.target.value)
+            if (!tags.length) return;
+            const was = [...$tagsInc.options].map(o => o.value)
+            for (const t of tags) if (!was.includes(t)) {
+                $tagsInc.append(html.option({ selected: true, value: t }, t))
+                $tags.append(makeTagCheckBox(t))
+            }
+            const s = [...new Set([...was, ...tags])].sort().toString()
+            if (s != localStorage.getItem('links-tags')) {
+                localStorage.setItem('links-tags', s)
+            }
+        }
+    }))
+    const i = await db.get('links', url)
+    const si = url.indexOf('?')
+    if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
+    if (!i) {
+        $cards.prepend(card(e.data))
+        const b = html.button(async () => {
+            const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+            if (!tags.length) return log('select least one tag')
+            b.remove()
+            const link = { url, src, name: name || title, tags }
+            await db.add('links', link)
+            close()
+        }, 'add')
+        const bSameName = html.button(async () => {
+            bSameName.remove()
+            const ls = await db.getAll('links')
+            const n = (name || title).toLowerCase()
+            const sn = ls.filter(l => l.name.toLowerCase() == n)
+            if (!sn.length) {
+                log('not found same name')
+                return
+            }
+            $cards.append(...sn.map(card));
+
+            const b = html.button(async () => {
+                b.remove()
+                await db.add('links', { ...sn[0], url, src })
+                await db.delete('links', sn[0].url)
+                close()
+            }, 'replace url and src in first same name')
+            document.body.append(b)
+        }, 'search same name')
+        document.body.append($tags, b, bSameName)
+        return
+    }
+    $cards.prepend(card(i));
+    [...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value));
+    [...$tags.elements].forEach(cb => cb.checked = i.tags.includes(cb.value))
+    const b = html.button(async () => {
+        if (!confirm('remove?')) return;
+        b.remove()
+        await db.delete('links', url)
+        log(`"${name || title}" removed\n${url}`)
+    }, 'remove')
+    const bSrc = html.button(async () => {
+        bSrc.remove()
+        await db.update('links', url, { src })
+        log('src updated')
+    }, 'update src')
+    const bTags = html.button(async () => {
+        const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+        if (!tags.length) return log('select least one tag')
+        const { eqSet } = await import('../lib/diff.js')
+        if (eqSet(tags, i.tags)) return;
+        bTags.disabled = true
+        await db.update('links', url, { tags })
+        i.tags = tags
+        bTags.disabled = false
+        log('tags updated to ' + tags)
+    }, 'update tags')
+    document.body.append(b, bTags, bSrc)
+})
+opener?.postMessage('ready', '*')
+
+async function download() {
+    const d = new Date().toISOString().slice(2, 10)
+    const name = prompt('{name}.json', 'links_' + d)
+    if (!name) return;
+    const ls = await db.getAll('links')
+    log(`export ${ls.length} links`)
+    saveJson(ls, name) // TODO 
+}
+
+async function upload() {
+    const ls = await readJson()
+    log(`import ${ls.length} links`)
+    const progress = html.progress({ max: ls.length, value: 0 })
+    document.body.append(progress)
+    for (const link of ls) {
+        await db.add('links', link)
+        progress.value += 1
+    }
+}
+
+const stringToTags = s => s
+    .split(/,|\s/)
+    .map(s => s.trim())
+    .filter(Boolean)
+
+async function updateTags(add = '', rm = '') {
+    add = stringToTags(add)
+    rm = stringToTags(rm)
+    const { eqSet } = await import('../lib/diff.js')
+    for (const url of [...$$('a.select')].map(a => a.href)) {
+        const l = await db.get('links', url)
+        if (!l) continue;
+        const tags = [...subtractSet(new Set([...l.tags, ...add]), rm)]
+        if (eqSet(tags, l.tags)) continue;
+        await db.update('links', url, { tags })
+        log(url, `${l.tags} to ${tags}`)
+    }
+}
+
+async function duplicates(inc, exclude) {
+    const all = await db.getAll('links')
+    const ds = all.filter(l => l.url.includes('?')
+        && (!inc || l.url.includes(inc))
+        && (!exclude || !l.url.includes(exclude)))
+    ds.forEach(l => {
+        const url = l.url.slice(0, l.url.indexOf('?'))
+        const o = all.find(ll => ll.url != l.url && ll.url.startsWith(url))
+        if (o) ds.push(o)
+    })
+    ds.sort(({ url: a }, { url: b }) => a > b ? 1 : a < b ? -1 : 0)
+    $cards.innerHTML = ''
+    $cards.append(...ds.map(card))
+}
+
+async function pull(olds, addTags = []) {
+    if (!Array.isArray(addTags)) addTags = []
+    addTags.filter(Boolean)
+    if (typeof olds == 'string') olds = JSON.parse(olds)
+    if (!olds) return;
+    const count = { all: olds.length, upTags: 0, upPrev: 0 }
+    for (const o of olds) {
+        const link = await db.get('links', o.url)
+        if (!link) continue;
+        if (addTags.some(t => !link.tags.includes(t))) {
+            const tags = [...new Set([...link.tags, ...addTags])]
+            await db.update('links', o.url, { tags })
+            count.upTags++
+        }
+        if (!o.prev || link.prev == o.prev) continue;
+        if (!link.prev) {
+            await db.update('links', o.url, { prev: o.prev })
+            count.upPrev++
+        }
+        const ls = await Promise.all([
+            db.get('links', link.prev),
+            link,
+            db.get('links', o.prev),
+            link,
+        ])
+        $cards.append(ls.map(card), html.p({ class: 'div' }))
+    }
+    log('pull done ' + Object.entries(count).map(p => p.join(' ')))
+}
