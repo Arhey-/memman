@@ -314,10 +314,12 @@ async function upload() {
 	}
 }
 
-const stringToTags = s => s
-	.split(/,|\s/)
-	.map(s => s.trim())
-	.filter(Boolean)
+function stringToTags(s) {
+	return s
+		.split(/,|\s/)
+		.map(s => s.trim())
+		.filter(Boolean)
+}
 
 async function updateTags(add = '', rm = '') {
 	add = stringToTags(add)
