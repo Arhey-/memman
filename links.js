@@ -5,7 +5,14 @@ import { DB } from '../lib/db.js'
 addEventListener('error', e => log(e.message))
 addEventListener('unhandledrejection', e => log('reject', e.reason))
 function log(...t) {
-	document.body.append(html.p(null, ...t)) // TODO [x]
+	const p = html.p(null, ...t)
+	const header = document.getElementById('notifications')
+	if (header) {
+		header.prepend(p)
+		setTimeout(() => document.body.append(p), 1_000)
+	} else {
+		document.body.append(p) // TODO ❌
+	}
 }
 
 function subtractSet(set, subs) {

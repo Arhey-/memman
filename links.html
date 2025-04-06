@@ -71,6 +71,15 @@
 			border: 1px solid blue;
 		}
 
+		#notifications {
+			position: absolute;
+			top: 0;
+			width: 100%;
+			max-height: 15vh;
+			overflow-y: scroll;
+			background: linear-gradient(black, black 50%, #000b);
+		}
+
 		#tool {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
@@ -120,8 +129,8 @@
 	</style>
 </head>
 
-<div id="cards"></div>
-<div id="tool">
+<main id="cards"></main>
+<footer id="tool">
 	<textarea placeholder="eval" hidden>
 //prevent eval -- uncomment to don't eval
 // updateTags('','') // add,rm in .select
@@ -143,9 +152,10 @@
 	<select id="tagsEx" multiple></select>
 	<select id="tagsInc" multiple></select>
 	<button id="show">show</button>
-</div>
+</footer>
 <fieldset id="tags">
 	<legend>tags</legend>
 </fieldset>
+<header id="notifications"></header>
 
 <script type="module" src="./links.js"></script>
