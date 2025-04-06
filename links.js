@@ -322,22 +322,56 @@ async function upload() {
 	}
 }
 
-async function diffUpload() {
+async function diffUpload_localOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
-	const remotes = new Map(ls.map(l => [l.url, l]))
-	let changed = 0, removed = 0
+	const remotes = new Set(ls.map(l => l.url))
+	let localOnly = 0 // added on local OR removed on remote
 	await db.each('links', local => {
-		const r = remotes.get(local.url)
-		if (r) {
-			// diff changes
-			// if(chanded) changed++;
-		} else {
-			removed++
+		if (!remotes.has(local.url)) {
+			localOnly++
 			$cards.append(card(local))
 		}
 	})
-	log('local-only', removed)
+	log(`local-only ${localOnly}`)
+}
+
+async function diffUpload__remoteOnly() {
+	const ls = await readJson()
+	log(`remote ${ls.length} links`)
+	const progress = html.progress({ max: ls.length, value: 0 })
+	document.body.append(progress)
+	let remoteOnly = 0 // removed on local OR added on remote
+	for (const remote of ls) {
+		const local = await db.get('links', remote.url)
+		if (!local) {
+			remoteOnly++
+			$cards.append(card(remote))
+			// todo button 'add'
+		}
+		progress.value += 1
+	}
+	log('remote-only', remoteOnly)
+}
+
+async function diffUpload__changs() {
+	const ls = await readJson()
+	log(`remote ${ls.length} links`)
+	const remotes = new Map(ls.map(l => [l.url, l]))
+	$perRow.value = 2
+	$perRow.onchange()
+	let same = 0, changed = 0
+	await db.each('links', local => {
+		const remote = remotes.get(local.url)
+		if (!remote) return;
+		if (JSON.stringify(local) === JSON.stringify(remote)) { // TODO
+			same++
+		} else {
+			changed++
+			$cards.append(card(local), card(remote))
+		}
+	})
+	log(`same: ${same}, changed: ${changed}`)
 }
 
 function stringToTags(s) {
