@@ -46,6 +46,7 @@ $textarea.onchange = () => {
 	else log(r);
 }
 
+
 const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 	if (e.oldVersion == 0 && e.newVersion == 1) {
 		const db = e.target.result
@@ -57,8 +58,8 @@ const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 })
 await db.ready
 
-localStorage.getItem('links-tags')?.split(',').forEach(addTagToUI)
-const tagsSort = stringToTags(localStorage.getItem('links-tags-sort') || '')
+const tagsSort = stringToTags(localStorage.getItem('links-tags') || '')
+tagsSort.forEach(addTagToUI)
 
 function tagSortedIndex({ tag, originalIndex }) {
 	const i = tagsSort.indexOf(tag)
@@ -98,6 +99,7 @@ function tagOnChange({ target: { value, checked } }) {
 		.find(o => o.value == value)
 		.selected = checked
 }
+
 
 $('#show').onclick = () => show().catch(log)
 async function show(urlPart = '') {
@@ -151,6 +153,7 @@ $perRow.onchange = e => {
 }
 $perRow.value = localStorage.getItem('links-columns') || ''
 $perRow.onchange()
+
 
 const $select = $('#select')
 $select.onchange = () => {
@@ -217,6 +220,7 @@ function prevMods(list) {
 	})
 	return list
 }
+
 
 addEventListener('message', async e => {
 	if (!e.data) return;
