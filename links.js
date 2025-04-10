@@ -39,7 +39,8 @@ const $textarea = $('textarea')
 $('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 $textarea.onchange = () => {
 	// add in-string check?
-	const s = $textarea.value.replace(/ ([A-Z])/g, '$1') // FIXME "new Map"
+	const s = $textarea.value.replace(/(?<!new) ([A-Z])/g, '$1')
+	$textarea.value = s
 	if (!s || s.startsWith('prevent eval')) return;
 	const r = eval(s)
 	if (r instanceof Promise) r.then(log).catch(log);
