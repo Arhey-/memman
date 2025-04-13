@@ -346,17 +346,25 @@ async function diffUpload__remoteOnly() {
 	log(`remote ${ls.length} links`)
 	const progress = html.progress({ max: ls.length, value: 0 })
 	document.body.append(progress)
-	let remoteOnly = 0 // removed on local OR added on remote
+	let remoteOnly = new Map // removed on local OR added on remote
 	for (const remote of ls) {
 		const local = await db.get('links', remote.url)
 		if (!local) {
-			remoteOnly++
+			remoteOnly.set(remote.url, remote)
 			$cards.append(card(remote))
-			// todo button 'add'
 		}
 		progress.value += 1
 	}
-	log('remote-only', remoteOnly)
+	log('remote-only', remoteOnly.size)
+
+	document.body.append(html.button(async () => {
+		for (const a of $$('a.select')) {
+			const link = remoteOnly.get(a.href)
+			if (!link) continue;
+			await db.add('links', link)
+			a.remove()
+		}
+	}, 'add selected'))
 }
 
 async function diffUpload__changs() {
