@@ -37,6 +37,7 @@ const $cards = $('#cards'), $tags = $('#tags'),
 	$tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
 const $textarea = $('textarea')
 $('#code').onclick = () => $textarea.hidden = !$textarea.hidden
+$('#code').oncontextmenu = () => $('#actions').showModal()
 $textarea.onchange = () => {
 	// add in-string check?
 	const s = $textarea.value.replace(/(?<!new) ([A-Z])/g, '$1')
@@ -307,6 +308,18 @@ addEventListener('message', async e => {
 })
 opener?.postMessage('ready', '*')
 
+const actionButton = fn => html.button(e => { 
+	fn(e)
+	$('#actions').close()
+}, fn.name)
+$('#actions').append(
+	actionButton(download),
+	actionButton(diffUpload_localOnly),
+	actionButton(diffUpload_remoteOnly),
+	actionButton(diffUpload_changs),
+	actionButton(upload)
+)
+
 async function download() {
 	const d = new Date().toISOString().slice(2, 10)
 	const name = prompt('{name}.json', 'links_' + d)
@@ -319,12 +332,13 @@ async function download() {
 async function upload() {
 	const ls = await readJson()
 	log(`import ${ls.length} links`)
-	const progress = html.progress({ max: ls.length, value: 0 })
-	document.body.append(progress)
+	const progress = html.progress({ max: ls.length, value: 0, class: 'wide' })
+	$('#tool').prepend(progress)
 	for (const link of ls) {
 		await db.add('links', link)
 		progress.value += 1
 	}
+	progress.remove()
 }
 
 async function diffUpload_localOnly() {
@@ -341,11 +355,11 @@ async function diffUpload_localOnly() {
 	log(`local-only ${localOnly}`)
 }
 
-async function diffUpload__remoteOnly() {
+async function diffUpload_remoteOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
-	const progress = html.progress({ max: ls.length, value: 0 })
-	document.body.append(progress)
+	const progress = html.progress({ max: ls.length, value: 0, class: 'wide' })
+	$('#tool').prepend(progress)
 	let remoteOnly = new Map // removed on local OR added on remote
 	for (const remote of ls) {
 		const local = await db.get('links', remote.url)
@@ -355,6 +369,7 @@ async function diffUpload__remoteOnly() {
 		}
 		progress.value += 1
 	}
+	progress.remove()
 	log('remote-only', remoteOnly.size)
 
 	document.body.append(html.button(async () => {
@@ -367,7 +382,7 @@ async function diffUpload__remoteOnly() {
 	}, 'add selected'))
 }
 
-async function diffUpload__changs() {
+async function diffUpload_changs() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
 	const remotes = new Map(ls.map(l => [l.url, l]))
@@ -385,6 +400,15 @@ async function diffUpload__changs() {
 		}
 	})
 	log(`same: ${same}, changed: ${changed}`)
+	document.body.append(html.button(async () => {
+		for (const a of $$('a.select')) {
+			const remote = remotes.get(a.href)
+			if (!remote) continue;
+			await db.update('links', remote.url, { tags: remote.tags })
+			a.previousElementSibling.remove()
+			a.remove()
+		}
+	}, 'replace selected to remote .tags'))
 }
 
 function stringToTags(s) {

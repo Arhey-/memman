@@ -86,6 +86,11 @@
 			gap: 1px;
 			position: sticky;
 			bottom: 0;
+
+			progress.wide {
+				grid-column: 1/-1;
+				width: 100%;
+			}
 		}
 
 		button {
@@ -138,11 +143,6 @@
 // [...$$('a.select')].forEach(a => log(a.href))
 // pull(localStorage.getItem('tempItems'), [])
 // localStorage.setItem('links-tag', 'a,b')
-// download()
-// diffUpload_localOnly()
-// diffUpload_remoteOnly()
-// diffUpload_changs()
-// upload()
 </textarea>
 	<button id="code">code</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
@@ -158,6 +158,9 @@
 <fieldset id="tags">
 	<legend>tags</legend>
 </fieldset>
+<dialog id="actions">
+	<button onclick="this.closest('dialog').close()">close</button>
+</dialog>
 <header id="notifications"></header>
 
 <script type="module" src="./links.js"></script>
