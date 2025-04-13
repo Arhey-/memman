@@ -26,7 +26,7 @@ const $$ = selector => document.querySelectorAll(selector)
 
 const card = i => html.a(
 	{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
-	html.p(i.name || i.title),
+	html.p({ class: 'name' }, i.name || i.title),
 	html.img({ src: i.src, loading: 'lazy' }),
 	html.p({ class: 'tags' }, [
 		...subtractSet(i.tags, [...$tagsInc.selectedOptions].map(o => o.value))
@@ -341,6 +341,13 @@ async function upload() {
 	progress.remove()
 }
 
+function diffCard(link, cl) {
+	const c = card(link)
+	if (Array.isArray(cl)) c.classList.add(...cl);
+	else c.classList.add(cl);
+	return c
+}
+
 async function diffUpload_localOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
@@ -349,7 +356,7 @@ async function diffUpload_localOnly() {
 	await db.each('links', local => {
 		if (!remotes.has(local.url)) {
 			localOnly++
-			$cards.append(card(local))
+			$cards.append(diffCard(local, 'local-only'))
 		}
 	})
 	log(`local-only ${localOnly}`)
@@ -396,7 +403,10 @@ async function diffUpload_changs() {
 			same++
 		} else {
 			changed++
-			$cards.append(card(local), card(remote))
+			if(!$cards.lastElementChild.classList.contains('diff')) {
+				$cards.append(html.p({ class: 'div' }))
+			}
+			$cards.append(diffCard(local, 'diff'), diffCard(remote, ['diff', 'remote']))
 		}
 	})
 	log(`same: ${same}, changed: ${changed}`)
