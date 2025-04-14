@@ -268,10 +268,12 @@ addEventListener('message', async e => {
 			}
 			$cards.append(...sn.map(card));
 
+			const first = sn[0]
+			log(first.url)
 			const b = html.button(async () => {
 				b.remove()
-				await db.add('links', { ...sn[0], url, src })
-				await db.delete('links', sn[0].url)
+				await db.add('links', { ...first, url, src })
+				await db.delete('links', first.url)
 				close()
 			}, 'replace url and src in first same name')
 			document.body.append(b)
