@@ -59,6 +59,8 @@
 		.tags {
 			bottom: 0;
 			right: 0;
+			display: flex;
+			gap: .5rem;
 		}
 
 		a>img {
@@ -135,8 +137,20 @@
 			}
 
 			label:has(:checked) {
-				color: darkseagreen;
+				color: mediumseagreen;
 			}
+		}
+
+		#actions {
+			display: grid;
+			gap: 1px;
+		}
+
+		.red {
+			color: red;
+		}
+		.green {
+			color: mediumseagreen;
 		}
 	</style>
 </head>
@@ -145,7 +159,6 @@
 <footer id="tool">
 	<textarea placeholder="eval" hidden autocorrect="off" autocapitalize="off">
 //prevent eval -- uncomment to don't eval
-// updateTags('','') // add,rm in .select
 // duplicates('ga=','exclude')
 // [...$$('a.select')].forEach(a => log(a.href))
 // pull(localStorage.getItem('tempItems'), [])

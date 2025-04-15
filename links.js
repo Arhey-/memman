@@ -15,21 +15,16 @@ function log(...t) {
 	}
 }
 
-function subtractSet(set, subs) {
-	const ss = new Set(set)
-	for (const s of subs) ss.delete(s)
-	return ss
-}
-
 const $ = selector => document.querySelector(selector)
 const $$ = selector => document.querySelectorAll(selector)
+const selectedOptions = el => Array.from(el.selectedOptions, o => o.value)
 
 const card = i => html.a(
 	{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
 	html.p({ class: 'name' }, i.name || i.title),
 	html.img({ src: i.src, loading: 'lazy' }),
 	html.p({ class: 'tags' }, [
-		...subtractSet(i.tags, [...$tagsInc.selectedOptions].map(o => o.value))
+		...subtractSet(i.tags, selectedOptions($tagsInc))
 	].toString())
 )
 
@@ -106,8 +101,8 @@ function tagOnChange({ target: { value, checked } }) {
 $('#show').onclick = () => show().catch(log)
 async function show(urlPart = '') {
 	$cards.innerHTML = ''
-	const inc = [...$tagsInc.selectedOptions].map(o => o.value)
-	const ex = [...$tagsEx.selectedOptions].map(o => o.value)
+	const inc = selectedOptions($tagsInc)
+	const ex = selectedOptions($tagsEx)
 	const isLoad = inc.length || ex.length || urlPart.length || confirm(
 		'no tags selected.\nYES - show all, CANCEL - reindex tags'
 	)
@@ -250,7 +245,7 @@ addEventListener('message', async e => {
 	if (!i) {
 		$cards.prepend(card(e.data))
 		const b = html.button(async () => {
-			const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+			const tags = selectedOptions($tagsInc)
 			if (!tags.length) return log('select least one tag')
 			b.remove()
 			const link = { url, src, name: name || title, tags }
@@ -296,7 +291,7 @@ addEventListener('message', async e => {
 		log('src updated')
 	}, 'update src')
 	const bTags = html.button(async () => {
-		const tags = [...$tagsInc.selectedOptions].map(o => o.value)
+		const tags = selectedOptions($tagsInc)
 		if (!tags.length) return log('select least one tag')
 		const { eqSet } = await import('../lib/diff.js')
 		if (eqSet(tags, i.tags)) return;
@@ -315,6 +310,7 @@ const actionButton = fn => html.button(e => {
 	$('#actions').close()
 }, fn.name)
 $('#actions').append(
+	actionButton(modTags),
 	actionButton(download),
 	actionButton(diffUpload_localOnly),
 	actionButton(diffUpload_remoteOnly),
@@ -392,11 +388,13 @@ async function diffUpload_remoteOnly() {
 }
 
 async function diffUpload_changs() {
+	$perRow.value = 2
+	$perRow.onchange()
+	$perRow.disabled = true
+
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
 	const remotes = new Map(ls.map(l => [l.url, l]))
-	$perRow.value = 2
-	$perRow.onchange()
 	let same = 0, changed = 0
 	await db.each('links', local => {
 		const remote = remotes.get(local.url)
@@ -405,13 +403,11 @@ async function diffUpload_changs() {
 			same++
 		} else {
 			changed++
-			if(!$cards.lastElementChild.classList.contains('diff')) {
-				$cards.append(html.p({ class: 'div' }))
-			}
-			$cards.append(diffCard(local, 'diff'), diffCard(remote, ['diff', 'remote']))
+			appendDiff(local, remote)
 		}
 	})
 	log(`same: ${same}, changed: ${changed}`)
+
 	document.body.append(html.button(async () => {
 		for (const a of $$('a.select')) {
 			const remote = remotes.get(a.href)
@@ -423,6 +419,43 @@ async function diffUpload_changs() {
 	}, 'replace selected to remote .tags'))
 }
 
+function appendDiff(local, remote) {
+	if (!$cards.lastElementChild.classList.contains('diff')) {
+		$cards.append(html.p({ class: 'div' }))
+	}
+	const dt = diffTags(local.tags, remote.tags)
+	const cardLocal = diffCard(local, 'diff')
+	cardLocal.querySelector('.tags').replaceChildren(...local.tags.map(
+		t => dt.rm.has(t) ? html.span({ class: 'red' }, t) : html.span(t)
+	))
+	const cardRemote = diffCard(remote, ['diff', 'remote'])
+	cardRemote.querySelector('.tags').replaceChildren(...remote.tags.map(
+		t => dt.add.has(t) ? html.span({ class: 'green' }, t) : html.span(t)
+	))
+	$cards.append(cardLocal, cardRemote)
+}
+
+async function modTags() {
+	const add = new Set(selectedOptions($tagsInc))
+	const rm = new Set(selectedOptions($tagsEx))
+	for (const { href: url } of $$('a.select')) {
+		const l = await db.get('links', url)
+		if (!l) continue;
+		const tags = subtractSet([...l.tags, ...add], rm)
+		if (!tags.size) throw new Error('link must have at least one tag')
+		const diff = diffTags(l.tags, tags)
+		if (!diff.rm.size && !diff.add.size) continue;
+		await db.update('links', url, { tags: [...tags] })
+		log(
+			url,
+			html.br(),
+			html.span({ class: 'red' }, [...diff.rm]),
+			` ${[...diff.same]} `,
+			html.span({ class: 'green' }, [...diff.add]),
+		)
+	}
+}
+
 function stringToTags(s) {
 	return s
 		.split(/,|\s/)
@@ -430,18 +463,19 @@ function stringToTags(s) {
 		.filter(Boolean)
 }
 
-async function updateTags(add = '', rm = '') {
-	add = stringToTags(add)
-	rm = stringToTags(rm)
-	const { eqSet } = await import('../lib/diff.js')
-	for (const url of [...$$('a.select')].map(a => a.href)) {
-		const l = await db.get('links', url)
-		if (!l) continue;
-		const tags = [...subtractSet([...l.tags, ...add], rm)]
-		if (eqSet(tags, l.tags)) continue;
-		await db.update('links', url, { tags })
-		log(url, `${l.tags} to ${tags}`)
+function diffTags(old, current) {
+	const o = new Set(old), c = new Set(current)
+	return {
+		rm: o.difference(c),
+		add: c.difference(o),
+		same: c.intersection(o),
 	}
+}
+
+function subtractSet(set, subs) {
+	const ss = new Set(set)
+	for (const s of subs) ss.delete(s)
+	return ss
 }
 
 async function duplicates(inc, exclude) {
