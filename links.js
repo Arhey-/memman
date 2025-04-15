@@ -350,11 +350,14 @@ async function diffUpload_localOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
 	const remotes = new Set(ls.map(l => l.url))
+	const remoteNames = new Map(ls.map(l => [l.name, l])) // ! last key win !
 	let localOnly = 0 // added on local OR removed on remote
 	await db.each('links', local => {
 		if (!remotes.has(local.url)) {
 			localOnly++
 			$cards.append(diffCard(local, 'local-only'))
+			const sameName = remoteNames.get(local.name)
+			if (sameName) $cards.append(card(sameName)) // TODO is remoteOnly / diff
 		}
 	})
 	log(`local-only ${localOnly}`)
