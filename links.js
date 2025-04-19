@@ -4,9 +4,10 @@ import { DB } from '../lib/db.js'
 
 addEventListener('error', e => log(e.message))
 addEventListener('unhandledrejection', e => log('reject', e.reason))
+let isLogNotify = true
 function log(...t) {
-	const p = html.p(null, ...t)
-	const header = document.getElementById('notifications')
+	const p = html.p({ class: 'log' }, ...t)
+	const header = isLogNotify && document.getElementById('notifications')
 	if (header) {
 		header.prepend(p)
 		setTimeout(() => document.body.append(p), 1_000)
@@ -223,6 +224,7 @@ function prevMods(list) {
 
 addEventListener('message', async e => {
 	if (!e.data) return;
+	isLogNotify = false
 	const { name, title } = e.data
 	let { url, src } = e.data
 	if (url) {
@@ -246,13 +248,16 @@ addEventListener('message', async e => {
 	if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
 	if (!i) {
 		$cards.prepend(card(e.data))
-		const b = html.button(async () => {
-			const tags = selectedOptions($tagsInc)
-			if (!tags.length) return log('select least one tag')
-			b.remove()
-			const link = { url, src, name: name || title, tags }
-			await db.add('links', link)
-			close()
+		const b = html.button({
+			class: 'bgGreen',
+			onclick: async () => {
+				const tags = selectedOptions($tagsInc)
+				if (!tags.length) return log('select least one tag')
+				b.remove()
+				const link = { url, src, name: name || title, tags }
+				await db.add('links', link)
+				close()
+			}
 		}, 'add')
 		const bSameName = html.button(async () => {
 			bSameName.remove()
@@ -281,11 +286,14 @@ addEventListener('message', async e => {
 	$cards.prepend(card(i));
 	[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value));
 	[...$tags.elements].forEach(cb => cb.checked = i.tags.includes(cb.value))
-	const b = html.button(async () => {
-		if (!confirm('remove?')) return;
-		b.remove()
-		await db.delete('links', url)
-		log(`"${name || title}" removed\n${url}`)
+	const b = html.button({
+		class: 'bgRed',
+		onclick: async () => {
+			if (!confirm('remove?')) return;
+			b.remove()
+			await db.delete('links', url)
+			log(`"${name || title}" removed\n${url}`)
+		}
 	}, 'remove')
 	const bSrc = html.button(async () => {
 		bSrc.remove()
