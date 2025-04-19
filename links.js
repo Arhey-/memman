@@ -33,6 +33,8 @@ const $cards = $('#cards'), $tags = $('#tags'),
 const $textarea = $('textarea')
 $('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 $('#code').oncontextmenu = () => $('#actions').showModal()
+if (!/mobile/i.test(navigator.userAgent))
+	$('#code').before(html.button(() => $('#actions').showModal(), 'actions'))
 $textarea.onchange = () => {
 	// add in-string check?
 	const s = $textarea.value.replace(/(?<!new) ([A-Z])/g, '$1')
