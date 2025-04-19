@@ -20,7 +20,7 @@ const $$ = selector => document.querySelectorAll(selector)
 const selectedOptions = el => Array.from(el.selectedOptions, o => o.value)
 
 const card = i => html.a(
-	{ href: i.url, target: '_blank', class: { next: i.prev, gap: i[prevGap] } },
+	{ href: i.url, target: '_blank', class: { card: 1, next: i.prev, gap: i[prevGap] } },
 	html.p({ class: 'name' }, i.name || i.title),
 	html.img({ src: i.src, loading: 'lazy' }),
 	html.p({ class: 'tags' }, [
