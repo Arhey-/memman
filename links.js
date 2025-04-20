@@ -214,9 +214,9 @@ function sort(list) {
 
 const prevGap = Symbol('prevGap')
 function prevMods(list) {
-	const urls = new Set(list.map(l => l.url))
 	list.forEach((l, i) => {
-		if (l.prev && l.prev != list[i - 1]?.url) l[prevGap] = true
+		if (l.prev && l.prev != list[i - 1]?.url)
+			l[prevGap] = true
 	})
 	return list
 }
@@ -233,7 +233,17 @@ addEventListener('message', async e => {
 		url = u.href
 		log(url.split('/').map((s, i) => i ? '/' + s : s))
 	} else log(`message ${e.data}`);
-	$cards.append(...e.data.srcs?.map(u => html.img({ src: u, onclick: () => { src = u } })) || [])
+	
+	const imgs = e.data.srcs?.map(choseSrc => html.img({
+		src: choseSrc,
+		onclick() {
+			src = choseSrc
+			for (const img of imgs) {
+				img.classList.toggle('fade', img.src !== src)
+			}
+		}
+	}))
+	if (imgs) $cards.append(...imgs)
 
 	document.body.append(html.input({
 		placeholder: 'new tags (,|\\s separated)',
@@ -286,6 +296,9 @@ addEventListener('message', async e => {
 	$cards.prepend(card(i));
 	[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value));
 	[...$tags.elements].forEach(cb => cb.checked = i.tags.includes(cb.value))
+	if (imgs) for (const img of imgs) {
+		img.classList.toggle('fade', img.src !== i.src)
+	}
 	const b = html.button({
 		class: 'bgRed',
 		onclick: async () => {
