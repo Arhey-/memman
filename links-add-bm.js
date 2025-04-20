@@ -6,6 +6,7 @@
 			let src = $('meta[property="og:image"]')?.content, srcs = [];
 			if (!src) srcs = [...d.querySelectorAll('img')]
 				.filter(i => {
+					if(!i.offsetParent) return;
 					let r = i.getBoundingClientRect();
 					return r.bottom >= 0 && r.top <= screen.height
 				})
