@@ -329,7 +329,7 @@ const makeTagsCreator = () => html.input({
 		const { was, added } = addTagsToUI(tags)
 		saveTags(was.union(added))
 	}
-}
+})
 
 const actionButton = fn => html.button(e => { 
 	fn(e)
