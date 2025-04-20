@@ -1,4 +1,5 @@
 import { saveJson, readJson } from './fs.js'
+import { reactive, watch } from '../lib/reactive.js'
 import { html } from '../lib/html.js'
 import { DB } from '../lib/db.js'
 
@@ -224,109 +225,111 @@ function prevMods(list) {
 
 addEventListener('message', async e => {
 	if (!e.data) return;
+	const { url: u, src: s, srcs, title, name = title } = e.data
+	if (!u) return log(`message ${e.data}`)
+
+	const url = removeTracking(u)
+	const src = reactive(s)
+
 	isLogNotify = false
-	const { name, title } = e.data
-	let { url, src } = e.data
-	if (url) {
-		const u = new URL(url)
-		u.searchParams.delete('_ga')
-		url = u.href
-		log(url.split('/').map((s, i) => i ? '/' + s : s))
-	} else log(`message ${e.data}`);
-	
-	const imgs = e.data.srcs?.map(choseSrc => html.img({
-		src: choseSrc,
-		onclick() {
-			src = choseSrc
-			for (const img of imgs) {
-				img.classList.toggle('fade', img.src !== src)
-			}
-		}
-	}))
-	if (imgs) $cards.append(...imgs)
-
-	document.body.append(html.input({
-		placeholder: 'new tags (,|\\s separated)',
-		onchange(e) {
-			const tags = stringToTags(e.target.value)
-			const { was, added } = addTagsToUI(tags)
-			saveTags(was.union(added))
-		}
-	}))
-	const i = await db.get('links', url)
-	const si = url.indexOf('?')
+	log(url.split('/').map((s, i) => i ? '/' + s : s))
+	const si = url.indexOf('?') // TODO
 	if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
-	if (!i) {
-		$cards.prepend(card(e.data))
-		const b = html.button({
-			class: 'bgGreen',
-			onclick: async () => {
-				const tags = selectedOptions($tagsInc)
-				if (!tags.length) return log('select least one tag')
-				b.remove()
-				const link = { url, src, name: name || title, tags }
-				await db.add('links', link)
-				close()
-			}
-		}, 'add')
-		const bSameName = html.button(async () => {
-			bSameName.remove()
-			const ls = await db.getAll('links')
-			const n = (name || title).toLowerCase()
-			const sn = ls.filter(l => l.name.toLowerCase() == n)
-			if (!sn.length) {
-				log('not found same name')
-				return
-			}
-			$cards.append(...sn.map(card));
+	
+	const imgs = srcs?.map(s => html.img({ src: s, onclick() { src(s) }}))
+	if (imgs) {
+		$cards.append(...imgs)
+		src.watch(src => imgs.forEach(i => i.classList.toggle('fade', i.src !== src)))
+	}
+	const editCardSection = html.section({ class: 'edit-card-section' })
+	document.body.append(makeTagsCreator(), editCardSection)
 
-			const first = sn[0]
-			log(first.url)
-			const b = html.button(async () => {
-				b.remove()
-				await db.add('links', { ...first, url, src })
-				await db.delete('links', first.url)
-				close()
-			}, 'replace url and src in first same name')
-			document.body.append(b)
-		}, 'search same name')
-		document.body.append($tags, b, bSameName)
+	const link = await db.get('links', url)
+	if (!link) {
+		$cards.prepend(card({ url, src: src(), name }))
+		document.body.append($tags)
+		editCardSection.append(
+			html.button({ class: 'bgGreen', onclick: makeAddLink(url, src, name) }, 'add'),
+			html.button(e => findSameName(e, url, src(), name), 'find same name')
+		)
 		return
 	}
-	$cards.prepend(card(i));
-	[...$tagsInc.options].forEach(o => o.selected = i.tags.includes(o.value));
-	[...$tags.elements].forEach(cb => cb.checked = i.tags.includes(cb.value))
-	if (imgs) for (const img of imgs) {
-		img.classList.toggle('fade', img.src !== i.src)
-	}
-	const b = html.button({
-		class: 'bgRed',
-		onclick: async () => {
-			if (!confirm('remove?')) return;
-			b.remove()
-			await db.delete('links', url)
-			log(`"${name || title}" removed\n${url}`)
-		}
-	}, 'remove')
+	$cards.prepend(card(link));
+	[...$tagsInc.options].forEach(o => o.selected = link.tags.includes(o.value));
+	[...$tags.elements].forEach(cb => cb.checked = link.tags.includes(cb.value))
 	const bSrc = html.button(async () => {
-		bSrc.remove()
-		await db.update('links', url, { src })
+		await db.update('links', url, { src: src() })
+		link.src = src()
 		log('src updated')
 	}, 'update src')
+	watch(() => bSrc.hidden = link.src == src())
+	src(src() || link.src)
 	const bTags = html.button(async () => {
 		const tags = selectedOptions($tagsInc)
 		if (!tags.length) return log('select least one tag')
 		const { eqSet } = await import('../lib/diff.js')
-		if (eqSet(tags, i.tags)) return;
+		if (eqSet(tags, link.tags)) return;
 		bTags.disabled = true
 		await db.update('links', url, { tags })
-		i.tags = tags
+		link.tags = tags
 		bTags.disabled = false
 		log('tags updated to ' + tags)
 	}, 'update tags')
-	document.body.append(b, bTags, bSrc)
+	const bRm = html.button({ class: 'bgRed' }, 'remove')
+	bRm.onclick = async () => {
+		if (!confirm('remove?')) return;
+		bRm.remove()
+		await db.delete('links', url)
+		log(`"${name}" removed\n${url}`)
+	}
+	editCardSection.append(bRm, bTags, bSrc)
 })
 opener?.postMessage('ready', '*')
+
+const makeAddLink = (url, src, name) => async e =>  {
+	const tags = selectedOptions($tagsInc)
+	if (!tags.length) return log('select least one tag')
+	e.target.remove()
+	const link = { url, src: src(), name, tags }
+	await db.add('links', link)
+	close()
+}
+async function findSameName(e, url, src, name) {
+	const status = html.span('search...')
+	e.target.replaceWith(status)
+	const ls = await db.getAll('links')
+	const n = name.toLowerCase()
+	const sn = ls.filter(l => l.name.toLowerCase() == n)
+	if (!sn.length) {
+		status.textContent = 'not found same name'
+		return
+	}
+	$cards.append(...sn.map(card));
+
+	const first = sn[0]
+	log(first.url)
+	status.replaceWith(html.button(async e => {
+		e.target.remove()
+		await db.add('links', { ...first, url, src })
+		await db.delete('links', first.url)
+		close()
+	}, 'replace url and src in first same name'))
+}
+
+function removeTracking(url) {
+	const u = new URL(url)
+	u.searchParams.delete('_ga')
+	return u.href
+}
+
+const makeTagsCreator = () => html.input({
+	placeholder: 'new tags (,|\\s separated)',
+	onchange(e) {
+		const tags = stringToTags(e.target.value)
+		const { was, added } = addTagsToUI(tags)
+		saveTags(was.union(added))
+	}
+}
 
 const actionButton = fn => html.button(e => { 
 	fn(e)
