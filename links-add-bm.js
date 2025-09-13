@@ -9,7 +9,7 @@
 		})
 		.map(i => i.src);
 	let l = {
-		url: location.href,
+		url: location.href.replace(/#$/, ''),
 		name: $('meta[property="og:title"]')?.content || d.title,
 		src,
 		srcs,

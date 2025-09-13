@@ -223,19 +223,19 @@ function prevMods(list) {
 }
 
 
-if (location.search) {
+document.addEventListener("DOMContentLoaded", () => {
+	if (!location.search) return;
 	const q = new URLSearchParams(location.search)
 	const url = q.get('url')
-	if (url) {
-		const data = {
-			url: url.replace(/#$/, ''),
-			name: q.get('name'),
-			src: q.get('src'),
-			srcs: q.getAll('srcs'),
-		}
-		edit({ data }).then(log).catch(log)
+	if (!url) return;
+	const data = {
+		url: url.replace(/#$/, ''),
+		name: q.get('name'),
+		src: q.get('src'),
+		srcs: q.getAll('srcs'),
 	}
-}
+	edit({ data }).catch(e => log('edit()', e))
+}, { once: true })
 
 addEventListener('message', edit)
 opener?.postMessage('ready', '*')
@@ -343,7 +343,9 @@ const makeTagsCreator = () => html.input({
 		const tags = stringToTags(e.target.value)
 		const { was, added } = addTagsToUI(tags)
 		saveTags(was.union(added))
-	}
+	},
+	autocorrect: "off",
+	autocapitalize: "off",
 })
 
 const actionButton = fn => html.button(e => { 

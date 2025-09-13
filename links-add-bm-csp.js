@@ -10,7 +10,7 @@
         .map(i => i.src);
     let u = new URL('https://arhey-.github.io/memman/links.html'),
         q = u.searchParams;
-    q.set('url', location.href);
+    q.set('url', location.href.replace(/#$/, ''));
     q.set('name', $('meta[property="og:title"]')?.content || d.title);
     q.set('src', src || '');
     for (let s of srcs) q.append('srcs', s);
