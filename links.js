@@ -11,7 +11,7 @@ function log(...t) {
 	const header = isLogNotify && document.getElementById('notifications')
 	if (header) {
 		header.prepend(p)
-		setTimeout(() => document.body.append(p), 1_000)
+		setTimeout(() => document.body.append(p), 2_000)
 	} else {
 		document.body.append(p) // TODO ❌
 	}
@@ -223,7 +223,21 @@ function prevMods(list) {
 }
 
 
-addEventListener('message', async e => {
+const editUrl = location.searchParams.get('url')
+if (editUrl) {
+	const q = location.searchParams
+	const data = {
+		url: editUrl.replace(/#$/, ''),
+		name: q.get('name'),
+		src: q.get('src'),
+		srcs: q.getAll('srcs'),
+	}
+	edit({ data }).then(log).catch(log)
+}
+
+addEventListener('message', edit)
+opener?.postMessage('ready', '*')
+async function edit(e) {
 	if (!e.data) return;
 	const { url: u, src: s, srcs, title, name = title } = e.data
 	if (!u) return log(`message ${e.data}`)
@@ -283,8 +297,7 @@ addEventListener('message', async e => {
 		log(`"${name}" removed\n${url}`)
 	}
 	editCardSection.append(bRm, bTags, bSrc)
-})
-opener?.postMessage('ready', '*')
+}
 
 const makeAddLink = (url, src, name) => async e =>  {
 	const tags = selectedOptions($tagsInc)
