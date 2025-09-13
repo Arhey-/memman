@@ -223,7 +223,7 @@ function prevMods(list) {
 }
 
 
-document.addEventListener("DOMContentLoaded", () => {
+setTimeout(() => {
 	if (!location.search) return;
 	const q = new URLSearchParams(location.search)
 	const url = q.get('url')
@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		srcs: q.getAll('srcs'),
 	}
 	edit({ data }).catch(e => log('edit()', e))
-}, { once: true })
+})
 
 addEventListener('message', edit)
 opener?.postMessage('ready', '*')
