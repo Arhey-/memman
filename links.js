@@ -223,16 +223,18 @@ function prevMods(list) {
 }
 
 
-const editUrl = location.searchParams.get('url')
-if (editUrl) {
-	const q = location.searchParams
-	const data = {
-		url: editUrl.replace(/#$/, ''),
-		name: q.get('name'),
-		src: q.get('src'),
-		srcs: q.getAll('srcs'),
+if (location.search) {
+	const q = new URLSearchParams(location.search)
+	const url = q.get('url')
+	if (url) {
+		const data = {
+			url: url.replace(/#$/, ''),
+			name: q.get('name'),
+			src: q.get('src'),
+			srcs: q.getAll('srcs'),
+		}
+		edit({ data }).then(log).catch(log)
 	}
-	edit({ data }).then(log).catch(log)
 }
 
 addEventListener('message', edit)
