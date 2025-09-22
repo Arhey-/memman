@@ -11,7 +11,7 @@ function log(...t) {
 	const header = isLogNotify && document.getElementById('notifications')
 	if (header) {
 		header.prepend(p)
-		setTimeout(() => document.body.append(p), 2_000)
+		setTimeout(() => document.body.append(p), 2_500)
 	} else {
 		document.body.append(p) // TODO ❌
 	}
@@ -59,6 +59,7 @@ const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 })
 await db.ready
 
+const tagsInc = {}, tagsEx = {}
 const tagsSort = stringToTags(localStorage.getItem('links-tags') || '')
 tagsSort.forEach(addTagToUI)
 
@@ -79,7 +80,7 @@ function saveTags(all) {
 }
 
 function addTagsToUI(tags) {
-	const was = new Set(Array.from($tagsInc.options, o => o.value))
+	const was = new Set(Object.keys(tagsInc))
 	const added = new Set(tags).difference(was)
 	for (const t of added) {
 		addTagToUI(t)
@@ -88,18 +89,37 @@ function addTagsToUI(tags) {
 }
 
 function addTagToUI(tag) {
-	$tagsInc.append(html.option({ value: tag }, tag))
-	$tagsEx.append(html.option({ value: tag }, tag))
-	const c = html.input({ type: 'checkbox', value: tag, onchange: tagOnChange })
+	const inc = tagsInc[tag] = reactive(false)
+	const ex = tagsEx[tag] = reactive(false)
+	const oi = html.option({ value: tag }, tag)
+	const oe = html.option({ value: tag }, tag)
+	$tagsInc.append(oi)
+	$tagsEx.append(oe)
+	const c = html.input({ type: 'checkbox', value: tag, onchange: tagToggle })
 	$tags.append(html.label(c, tag))
+
+	inc.watch(i => {
+		if (i) ex(false);
+		oi.selected = i
+		c.classList.toggle('inc', i)
+	})
+	ex.watch(e => {
+		if (e) inc(false);
+		oe.selected = e
+		c.classList.toggle('ex', e)
+	})
 }
 
-// TODO onchange $tagsInc -> $tags
-function tagOnChange({ target: { value, checked } }) {
-	[...$tagsInc.options]
-		.find(o => o.value == value)
-		.selected = checked
+function tagToggle(e) {
+	const tag = e.target.value
+	const inc = tagsInc[tag]
+	const ex = tagsEx[tag]
+	if (ex()) ex(false);
+	else if (inc()) ex(true);
+	else inc(true);
 }
+$tagsInc.onchange = () => [...$tagsInc.options].forEach(o => tagsInc[o.value](o.selected));
+$tagsEx.onchange = () => [...$tagsEx.options].forEach(o => tagsEx[o.value](o.selected));
 
 
 $('#show').onclick = () => show().catch(log)
@@ -125,7 +145,7 @@ async function show(urlPart = '') {
 	saveTags(allTags)
 	const { added } = addTagsToUI(allTags)
 	for (const t of added) log('new tags found in db: ', t)
-	
+
 	log(`total ${total}, show ${links.length}`)
 	await new Promise(r => setTimeout(r))
 	$cards.append(...prevMods(sort(links)).map(card))
@@ -156,6 +176,7 @@ $perRow.value = localStorage.getItem('links-columns') || ''
 $perRow.onchange()
 
 
+// TODO handy group selection, select in $cards
 const $select = $('#select')
 $select.onchange = () => {
 	if (!$select.checked) $$('.select')
@@ -251,8 +272,8 @@ async function edit(e) {
 	log(url.split('/').map((s, i) => i ? '/' + s : s))
 	const si = url.indexOf('?') // TODO
 	if (~si) db.get('links', url.slice(0, si)).then(l => l && $cards.append(card(l)))
-	
-	const imgs = srcs?.map(s => html.img({ src: s, onclick() { src(s) }}))
+
+	const imgs = srcs?.map(s => html.img({ src: s, onclick() { src(s) } }))
 	if (imgs) {
 		$cards.append(...imgs)
 		src.watch(src => imgs.forEach(i => i.classList.toggle('fade', i.src !== src)))
@@ -271,8 +292,7 @@ async function edit(e) {
 		return
 	}
 	$cards.prepend(card(link));
-	[...$tagsInc.options].forEach(o => o.selected = link.tags.includes(o.value));
-	[...$tags.elements].forEach(cb => cb.checked = link.tags.includes(cb.value))
+	link.tags.forEach(t => tagsInc[t](true))
 	const bSrc = html.button(async () => {
 		await db.update('links', url, { src: src() })
 		link.src = src()
@@ -301,7 +321,7 @@ async function edit(e) {
 	editCardSection.append(bRm, bTags, bSrc)
 }
 
-const makeAddLink = (url, src, name) => async e =>  {
+const makeAddLink = (url, src, name) => async e => {
 	const tags = selectedOptions($tagsInc)
 	if (!tags.length) return log('select least one tag')
 	e.target.remove()
@@ -348,7 +368,7 @@ const makeTagsCreator = () => html.input({
 	autocapitalize: "off",
 })
 
-const actionButton = fn => html.button(e => { 
+const actionButton = fn => html.button(e => {
 	fn(e)
 	$('#actions').close()
 }, fn.name)
