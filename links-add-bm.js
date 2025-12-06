@@ -1,6 +1,7 @@
 (() => {
 	let d = document, $ = s => d.querySelector(s);
 	let src = $('meta[property="og:image"]')?.content, srcs = [];
+	if (!src) src = $('video')?.poster;
 	if (!src) srcs = [...d.querySelectorAll('img')]
 		.filter(i => {
 			if (!i.offsetParent) return;
