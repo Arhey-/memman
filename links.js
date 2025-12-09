@@ -293,6 +293,11 @@ async function edit(e) {
 	}
 	$cards.prepend(card(link));
 	link.tags.forEach(t => tagsInc[t](true))
+	const bAddSrc = html.button(() => {
+		const s = prompt('add src variant')
+		if (!s) return;
+		$cards.append(html.img({ src: s, onclick() { src(s) } }))
+	}, 'add src')
 	const bSrc = html.button(async () => {
 		await db.update('links', url, { src: src() })
 		link.src = src()
@@ -318,7 +323,7 @@ async function edit(e) {
 		await db.delete('links', url)
 		log(`"${name}" removed\n${url}`)
 	}
-	editCardSection.append(bRm, bTags, bSrc)
+	editCardSection.append(bRm, bTags, bSrc, bAddSrc)
 }
 
 const makeAddLink = (url, src, name) => async e => {
