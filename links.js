@@ -151,8 +151,18 @@ async function show(urlPart = '') {
 	$cards.append(...prevMods(sort(links)).map(card))
 }
 
-$('#top').onclick = () => $cards.scrollIntoView()
-$('#down').onclick = () => $cards.lastElementChild.scrollIntoView()
+
+let $toTop = $('#top'), toTop = reactive(true), lastScrollY = 0
+document.onscroll = () => { 
+	toTop(scrollY < lastScrollY)
+	lastScrollY = scrollY
+}
+toTop.watch(v => { $toTop.textContent = v ? 'top' : 'down' })
+$toTop.onclick = () => {
+	const el = toTop() ? $cards : $cards.lastElementChild
+	el?.scrollIntoView()
+}
+
 $('#view').onclick = () => view()
 function view(urlPart = prompt('part of url')) {
 	if (!$cards.childElementCount) {
