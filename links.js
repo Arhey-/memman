@@ -379,14 +379,14 @@ const actionButton = fn => html.button(e => {
 }, fn.name)
 $('#actions').append(
 	actionButton(modTags),
-	actionButton(download),
-	actionButton(diffUpload_localOnly),
-	actionButton(diffUpload_remoteOnly),
-	actionButton(diffUpload_changs),
-	actionButton(upload)
+	actionButton(exports),
+	actionButton(diffImport_localOnly),
+	actionButton(diffImport_remoteOnly),
+	actionButton(diffImport_changs),
+	actionButton(imports)
 )
 
-async function download() {
+async function exports() {
 	const d = new Date().toISOString().slice(2, 10)
 	const name = prompt('{name}.json', 'links_' + d)
 	if (!name) return;
@@ -395,7 +395,7 @@ async function download() {
 	saveJson(ls, name) // TODO 
 }
 
-async function upload() {
+async function imports() {
 	const ls = await readJson()
 	log(`import ${ls.length} links`)
 	const progress = html.progress({ max: ls.length, value: 0, class: 'wide' })
@@ -414,7 +414,7 @@ function diffCard(link, cl) {
 	return c
 }
 
-async function diffUpload_localOnly() {
+async function diffImport_localOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
 	const remotes = new Set(ls.map(l => l.url))
@@ -431,7 +431,7 @@ async function diffUpload_localOnly() {
 	log(`local-only ${localOnly}`)
 }
 
-async function diffUpload_remoteOnly() {
+async function diffImport_remoteOnly() {
 	const ls = await readJson()
 	log(`remote ${ls.length} links`)
 	const progress = html.progress({ max: ls.length, value: 0, class: 'wide' })
@@ -458,7 +458,7 @@ async function diffUpload_remoteOnly() {
 	}, 'add selected'))
 }
 
-async function diffUpload_changs() {
+async function diffImport_changs() {
 	$perRow.value = 2
 	$perRow.onchange()
 	$perRow.disabled = true
@@ -491,7 +491,7 @@ async function diffUpload_changs() {
 }
 
 function appendDiff(local, remote) {
-	if (!$cards.lastElementChild.classList.contains('diff')) {
+	if (!$cards.lastElementChild?.classList.contains('diff')) {
 		$cards.append(html.p({ class: 'div' }))
 	}
 	const dt = diffTags(local.tags, remote.tags)
