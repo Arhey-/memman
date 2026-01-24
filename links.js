@@ -262,7 +262,7 @@ $('#main').onscroll = e => {
 	if(lastSwipeRight + 30 > now) return;
 	lastSwipeRight = now
 
-	const vw50 = innerWidth / 2 | 0
+	const vw50 = innerHeight / 2 | 0
 	const maxTop = $sidecar.offsetHeight - $sidecarTags.offsetHeight
 	$sidecarTags.style.top = Math.min(scrollY + vw50, maxTop) + 'px'
 }
