@@ -8,7 +8,7 @@
 
 		body {
 			color: #ccc;
-			background-color: #333;
+			background-color: #2d2d2d;
 			margin: 0;
 		}
 
@@ -113,13 +113,16 @@
 
 		button {
 			font-size: 1rem;
+			border-radius: 3px;
+			background-color: #555;
+			border: 1px solid buttonface;
 		}
 
-		#tagsInc, .bgGreen {
+		.bgGreen {
 			background-color: #385539;
 		}
 
-		#tagsEx, .bgRed {
+		.bgRed {
 			background-color: #5b0f0f;
 		}
 
@@ -141,14 +144,12 @@
 				display: inline-block;
 			}
 
-			label>input[type=checkbox] {
-				display: none;
-			}
+			label>input[type=checkbox] { display: none; }
 
-			label:has(.inc) {
+			.inc {
 				color: mediumseagreen;
 			}
-			label:has(.ex) {
+			.ex {
 				color: red;
 			}
 		}
@@ -158,10 +159,11 @@
 			&[open] { display: grid; }
 		}
 
-		.edit-card-section {
-			display: flex ;
+		#editCard {
+			display: flex;
 			justify-content: center;
 			gap: 1rem;
+			grid-column: auto / span 4;
 		}
 
 		.red {
@@ -189,12 +191,11 @@
 	<button id="code">code</button>
 	<input id="perRow" type='number' placeholder='auto-fit' />
 	<button id="top">top</button>
+	<button id="show">show</button>
 	<button id="view">view</button>
 	<label><input type="checkbox" id="prev">prev</label>
 	<label><input type="checkbox" id="select">select</label>
-	<select id="tagsEx" multiple></select>
-	<select id="tagsInc" multiple></select>
-	<button id="show">show</button>
+	<section id="editCard"></section>
 </footer>
 <fieldset id="tags">
 	<legend>tags</legend>

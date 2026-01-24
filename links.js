@@ -17,31 +17,33 @@ function log(...t) {
 	}
 }
 
+const isMobile = /mobile/i.test(navigator.userAgent)
 const $ = selector => document.querySelector(selector)
 const $$ = selector => document.querySelectorAll(selector)
-const selectedOptions = el => Array.from(el.selectedOptions, o => o.value)
 
 const card = i => html.a(
 	{ href: i.url, target: '_blank', class: { card: 1, next: i.prev, gap: i[prevGap] } },
 	html.p({ class: 'name' }, i.name || i.title),
 	html.img({ src: i.src, loading: 'lazy' }),
 	html.p({ class: 'tags' }, [
-		...subtractSet(i.tags, selectedOptions($tagsInc))
+		...subtractSet(i.tags, selected(tagsInc))
 	].toString())
 )
 
-const $cards = $('#cards'), $tags = $('#tags'),
-	$tagsInc = $('#tagsInc'), $tagsEx = $('#tagsEx')
+const $tags = $('#tags')
+const $cards = $('#cards')
 const $textarea = $('textarea')
 $('#code').onclick = () => $textarea.hidden = !$textarea.hidden
 $('#code').oncontextmenu = () => $('#actions').showModal()
-if (!/mobile/i.test(navigator.userAgent))
+if (!isMobile)
 	$('#code').before(html.button(() => $('#actions').showModal(), 'actions'))
 $textarea.onchange = () => {
-	// add in-string check?
-	const s = $textarea.value.replace(/(?<!new) ([A-Z])/g, '$1')
-	$textarea.value = s
+	let s = $textarea.value
 	if (!s || s.startsWith('prevent eval')) return;
+	if (isMobile) { // TODO 'fmt' button
+		const s = $textarea.value.replace(/(?<!new) ([A-Z])/g, '$1')
+		$textarea.value = s
+	}
 	const r = eval(s)
 	if (r instanceof Promise) r.then(log).catch(log);
 	else log(r);
@@ -60,6 +62,9 @@ const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 await db.ready
 
 const tagsInc = {}, tagsEx = {}
+const selected = o => Object.entries(o)
+	.filter(([, v]) => v())
+	.map(([k]) => k)
 const tagsSort = stringToTags(localStorage.getItem('links-tags') || '')
 tagsSort.forEach(addTagToUI)
 
@@ -91,23 +96,13 @@ function addTagsToUI(tags) {
 function addTagToUI(tag) {
 	const inc = tagsInc[tag] = reactive(false)
 	const ex = tagsEx[tag] = reactive(false)
-	const oi = html.option({ value: tag }, tag)
-	const oe = html.option({ value: tag }, tag)
-	$tagsInc.append(oi)
-	$tagsEx.append(oe)
-	const c = html.input({ type: 'checkbox', value: tag, onchange: tagToggle })
-	$tags.append(html.label(c, tag))
+	inc.watch(i => { if (i) ex(false) })
+	ex.watch(e => { if (e) inc(false) })
 
-	inc.watch(i => {
-		if (i) ex(false);
-		oi.selected = i
-		c.classList.toggle('inc', i)
-	})
-	ex.watch(e => {
-		if (e) inc(false);
-		oe.selected = e
-		c.classList.toggle('ex', e)
-	})
+	const c = html.input({ type: 'checkbox', value: tag, onchange: tagToggle })
+	const { classList } = $tags.appendChild(html.label(c, tag))
+	inc.watch(i => { classList.toggle('inc', i) })
+	ex.watch(e => { classList.toggle('ex', e) })
 }
 
 function tagToggle(e) {
@@ -118,15 +113,13 @@ function tagToggle(e) {
 	else if (inc()) ex(true);
 	else inc(true);
 }
-$tagsInc.onchange = () => [...$tagsInc.options].forEach(o => tagsInc[o.value](o.selected));
-$tagsEx.onchange = () => [...$tagsEx.options].forEach(o => tagsEx[o.value](o.selected));
 
 
 $('#show').onclick = () => show().catch(log)
 async function show(urlPart = '') {
 	$cards.innerHTML = ''
-	const inc = selectedOptions($tagsInc)
-	const ex = selectedOptions($tagsEx)
+	const inc = selected(tagsInc)
+	const ex = selected(tagsEx)
 	const isLoad = inc.length || ex.length || urlPart.length || confirm(
 		'no tags selected.\nYES - show all, CANCEL - reindex tags'
 	)
@@ -288,14 +281,11 @@ async function edit(e) {
 		$cards.append(...imgs)
 		src.watch(src => imgs.forEach(i => i.classList.toggle('fade', i.src !== src)))
 	}
-	const editCardSection = html.section({ class: 'edit-card-section' })
-	document.body.append(makeTagsCreator(), editCardSection)
 
 	const link = await db.get('links', url)
 	if (!link) {
 		$cards.prepend(card({ url, src: src(), name }))
-		document.body.append($tags)
-		editCardSection.append(
+		$('#editCard').append(
 			html.button({ class: 'bgGreen', onclick: makeAddLink(url, src, name) }, 'add'),
 			html.button(e => findSameName(e, url, src(), name), 'find same name')
 		)
@@ -316,7 +306,7 @@ async function edit(e) {
 	watch(() => bSrc.hidden = link.src == src())
 	src(src() || link.src)
 	const bTags = html.button(async () => {
-		const tags = selectedOptions($tagsInc)
+		const tags = selected(tagsInc)
 		if (!tags.length) return log('select least one tag')
 		const { eqSet } = await import('../lib/diff.js')
 		if (eqSet(tags, link.tags)) return;
@@ -333,11 +323,11 @@ async function edit(e) {
 		await db.delete('links', url)
 		log(`"${name}" removed\n${url}`)
 	}
-	editCardSection.append(bRm, bTags, bSrc, bAddSrc)
+	$('#editCard').append(bRm, bTags, bSrc, bAddSrc)
 }
 
 const makeAddLink = (url, src, name) => async e => {
-	const tags = selectedOptions($tagsInc)
+	const tags = selected(tagsInc)
 	if (!tags.length) return log('select least one tag')
 	e.target.remove()
 	const link = { url, src: src(), name, tags }
@@ -372,7 +362,7 @@ function removeTracking(url) {
 	return u.href
 }
 
-const makeTagsCreator = () => html.input({
+const TagsCreator = () => html.input({
 	placeholder: 'new tags (,|\\s separated)',
 	onchange(e) {
 		const tags = stringToTags(e.target.value)
@@ -388,6 +378,7 @@ const actionButton = fn => html.button(e => {
 	$('#actions').close()
 }, fn.name)
 $('#actions').append(
+	TagsCreator(),
 	actionButton(modTags),
 	actionButton(exports),
 	actionButton(diffImport_localOnly),
@@ -517,8 +508,8 @@ function appendDiff(local, remote) {
 }
 
 async function modTags() {
-	const add = new Set(selectedOptions($tagsInc))
-	const rm = new Set(selectedOptions($tagsEx))
+	const add = new Set(selected(tagsInc))
+	const rm = new Set(selected(tagsEx))
 	for (const { href: url } of $$('a.select')) {
 		const l = await db.get('links', url)
 		if (!l) continue;
