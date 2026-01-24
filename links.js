@@ -386,6 +386,7 @@ const actionButton = fn => html.button(e => {
 }, fn.name)
 $('#actions').append(
 	actionButton(pushHistory),
+	actionButton(info),
 	TagsCreator(),
 	actionButton(modTags),
 	actionButton(exports),
@@ -400,6 +401,15 @@ function pushHistory() {
 	const t = selected(tagsInc)
 	u.searchParams.set('show', t)
 	history.pushState({}, '', u)
+}
+
+async function info() {
+	const u = $('a.select')?.href
+	const l = u && await db.get('links', u)
+	if (l) {
+		const s = JSON.stringify(l, null, 2)
+		log(html.pre(s))
+	}
 }
 
 async function exports() {
