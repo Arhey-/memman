@@ -5,6 +5,7 @@ import { DB } from '../lib/db.js'
 
 addEventListener('error', e => log(e.message))
 addEventListener('unhandledrejection', e => log('reject', e.reason))
+
 let isLogNotify = true
 function log(...t) {
 	const p = html.p({ class: 'log' }, ...t)
@@ -61,6 +62,9 @@ const db = new DB('links', 1, (/** @type {IDBVersionChangeEvent} */ e) => {
 })
 await db.ready
 
+const $sidecar = $('#sidecar')
+const $sidecarTags = $('#sidecarTags')
+
 const tagsInc = {}, tagsEx = {}
 const selected = o => Object.entries(o)
 	.filter(([, v]) => v())
@@ -99,10 +103,8 @@ function addTagToUI(tag) {
 	inc.watch(i => { if (i) ex(false) })
 	ex.watch(e => { if (e) inc(false) })
 
-	const c = html.input({ type: 'checkbox', value: tag, onchange: tagToggle })
-	const { classList } = $tags.appendChild(html.label(c, tag))
-	inc.watch(i => { classList.toggle('inc', i) })
-	ex.watch(e => { classList.toggle('ex', e) })
+	addTagToggle(tag, inc, ex, $tags)
+	addTagToggle(tag, inc, ex, $sidecarTags)
 }
 
 function tagToggle(e) {
@@ -112,6 +114,13 @@ function tagToggle(e) {
 	if (ex()) ex(false);
 	else if (inc()) ex(true);
 	else inc(true);
+}
+
+function addTagToggle(tag, inc, ex, fieldset) {
+	const c = html.input({ type: 'checkbox', value: tag, onchange: tagToggle })
+	const { classList } = fieldset.appendChild(html.label(c, tag))
+	inc.watch(i => { classList.toggle('inc', i) })
+	ex.watch(e => { classList.toggle('ex', e) })
 }
 
 
@@ -244,6 +253,18 @@ function prevMods(list) {
 			l[prevGap] = true
 	})
 	return list
+}
+
+
+let lastSwipeRight = 0
+$('#main').onscroll = e => {
+	const now = Date.now()
+	if(lastSwipeRight + 30 > now) return;
+	lastSwipeRight = now
+
+	const vw50 = innerWidth / 2 | 0
+	const maxTop = $sidecar.offsetHeight - $sidecarTags.offsetHeight
+	$sidecarTags.style.top = Math.min(scrollY + vw50, maxTop) + 'px'
 }
 
 

@@ -16,6 +16,23 @@
 			word-wrap: break-word;
 		}
 
+		#main {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			width: 100vw;
+			overflow-x: scroll;
+			scroll-snap-type: x mandatory;
+			#cards {
+				width: 100vw;
+				scroll-snap-align: center;
+			}
+			#sidecar {
+				width: 95vw;
+				scroll-snap-align: center;
+				position: relative;
+			}
+		}
+
 		#cards {
 			--card-max-width: 1fr;
 			display: grid;
@@ -155,6 +172,10 @@
 			}
 		}
 
+		#sidecarTags {
+			position: relative; /* sticky not work */
+		}
+
 		#actions {
 			gap: 1px;
 			&[open] { display: grid; }
@@ -180,8 +201,14 @@
 	</style>
 	<title>links</title>
 </head>
-
-<main id="cards"></main>
+<section id="main">
+	<main id="cards"></main>
+	<aside id="sidecar">
+		<fieldset id="sidecarTags">
+			<legend>tags</legend>
+		</fieldset>
+	</aside>
+</section>
 <footer id="tool">
 	<textarea placeholder="eval" hidden autocorrect="off" autocapitalize="off">
 //prevent eval -- uncomment to don't eval
