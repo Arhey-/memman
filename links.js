@@ -250,6 +250,13 @@ function prevMods(list) {
 setTimeout(() => {
 	if (!location.search) return;
 	const q = new URLSearchParams(location.search)
+	const s = q.get('show')
+	if (s) {
+		stringToTags(s).forEach(t => tagsInc[t]?.(true))
+		show()
+		return
+	}
+
 	const url = q.get('url')
 	if (!url) return;
 	const data = {
@@ -378,6 +385,7 @@ const actionButton = fn => html.button(e => {
 	$('#actions').close()
 }, fn.name)
 $('#actions').append(
+	actionButton(pushHistory),
 	TagsCreator(),
 	actionButton(modTags),
 	actionButton(exports),
@@ -386,6 +394,13 @@ $('#actions').append(
 	actionButton(diffImport_changs),
 	actionButton(imports)
 )
+
+function pushHistory() {
+	const u = new URL(location)
+	const t = selected(tagsInc)
+	u.searchParams.set('show', t)
+	history.pushState({}, '', u)
+}
 
 async function exports() {
 	const d = new Date().toISOString().slice(2, 10)
